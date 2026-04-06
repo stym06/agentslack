@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  name      String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspaces Workspace[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @default("My Workspace")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user     User      @relation(fields: [userId], references: [id])
+  agents   Agent[]
+  channels Channel[]
+
+  @@map("workspaces")
+}
+
+model Agent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  openclawId  String   @map("openclaw_id")
+  name        String
+  role        String?
+  avatarUrl   String?  @map("avatar_url")
+  model       String   @default("anthropic/claude-sonnet-4-5")
+  soulMd      String?  @map("soul_md")
+  isAdmin     Boolean  @default(false) @map("is_admin")
+  status      String   @default("online")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace          Workspace            @relation(fields: [workspaceId], references: [id])
+  channelAgents      ChannelAgent[]
+  threadParticipants ThreadParticipant[]
+
+  @@index([workspaceId], name: "idx_agents_workspace")
+  @@map("agents")
+}
+
+model Channel {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  name        String
+  description String?
+  channelType String   @default("regular") @map("channel_type")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id])
+  channelAgents ChannelAgent[]
+  messages      Message[]
+  tasks         Task[]
+  taskGroups    TaskGroup[]
+
+  @@map("channels")
+}
+
+model ChannelAgent {
+  channelId String   @map("channel_id") @db.Uuid
+  agentId   String   @map("agent_id") @db.Uuid
+  addedAt   DateTime @default(now()) @map("added_at") @db.Timestamptz()
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  agent   Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, agentId])
+  @@index([channelId], name: "idx_channel_agents_ch")
+  @@map("channel_agents")
+}
+
+model Message {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId  String   @map("channel_id") @db.Uuid
+  threadId   String?  @map("thread_id") @db.Uuid
+  senderType String   @map("sender_type")
+  senderId   String   @map("sender_id") @db.Uuid
+  content    String
+  metadata   Json     @default("{}")
+  replyCount Int      @default(0) @map("reply_count")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  channel            Channel             @relation(fields: [channelId], references: [id])
+  parentThread       Message?            @relation("ThreadReplies", fields: [threadId], references: [id])
+  replies            Message[]           @relation("ThreadReplies")
+  threadParticipants ThreadParticipant[]
+  task               Task?
+
+  @@index([channelId, createdAt], name: "idx_messages_channel")
+  @@index([threadId, createdAt], name: "idx_messages_thread")
+  @@map("messages")
+}
+
+model ThreadParticipant {
+  threadId String   @map("thread_id") @db.Uuid
+  agentId  String   @map("agent_id") @db.Uuid
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz()
+
+  thread Message @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  agent  Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, agentId])
+  @@map("thread_participants")
+}
+
+model TaskGroup {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId   String   @map("channel_id") @db.Uuid
+  summary     String
+  createdByType String @map("created_by_type")
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  channel Channel @relation(fields: [channelId], references: [id])
+  tasks   Task[]
+
+  @@index([channelId], name: "idx_task_groups_channel")
+  @@map("task_groups")
+}
+
+model Task {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId     String   @map("channel_id") @db.Uuid
+  groupId       String?  @map("group_id") @db.Uuid
+  messageId     String   @unique @map("message_id") @db.Uuid
+  taskNumber    Int      @map("task_number")
+  title         String
+  status        String   @default("todo")
+  createdByType String   @map("created_by_type")
+  createdById   String   @map("created_by_id") @db.Uuid
+  claimedByType String?  @map("claimed_by_type")
+  claimedById   String?  @map("claimed_by_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  channel Channel   @relation(fields: [channelId], references: [id])
+  message Message   @relation(fields: [messageId], references: [id])
+  group   TaskGroup? @relation(fields: [groupId], references: [id])
+
+  @@unique([channelId, taskNumber])
+  @@index([channelId, status], name: "idx_tasks_channel_status")
+  @@index([groupId], name: "idx_tasks_group")
+  @@map("tasks")
+}

@@ -1,0 +1,102 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/config'
+import { db } from '@/lib/db'
+import { getIO } from '@/server/socket-server'
+import { getNextTaskNumber, enrichTask } from '@/lib/tasks/helpers'
+
+// GET /api/tasks?channel_id=X&status=all
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const channelId = searchParams.get('channel_id')
+  const status = searchParams.get('status') || 'all'
+
+  if (!channelId) {
+    return NextResponse.json({ error: 'channel_id required' }, { status: 400 })
+  }
+
+  const where: Record<string, unknown> = { channelId }
+  if (status !== 'all') {
+    where.status = status
+  }
+
+  const tasks = await db.task.findMany({
+    where,
+    orderBy: { taskNumber: 'asc' },
+    include: { message: true, group: true },
+  })
+
+  const enriched = await Promise.all(
+    tasks.map(async (t) => {
+      const base = await enrichTask(t)
+      const commentCount = t.message ? await db.message.count({ where: { threadId: t.messageId } }) : 0
+      return { ...base, group_id: t.groupId, group_summary: t.group?.summary ?? null, comment_count: commentCount }
+    }),
+  )
+
+  // Also fetch groups for this channel
+  const groups = await db.taskGroup.findMany({
+    where: { channelId },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  return NextResponse.json({ tasks: enriched, groups })
+}
+
+// POST /api/tasks — Create a task from the UI
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { channel_id, title, group_id } = body
+
+  if (!channel_id || !title) {
+    return NextResponse.json({ error: 'channel_id and title required' }, { status: 400 })
+  }
+
+  const taskNumber = await getNextTaskNumber(channel_id)
+
+  const message = await db.message.create({
+    data: {
+      channelId: channel_id,
+      senderType: 'user',
+      senderId: session.user.id,
+      content: title,
+      metadata: { isTask: true },
+    },
+  })
+
+  const task = await db.task.create({
+    data: {
+      channelId: channel_id,
+      groupId: group_id || null,
+      messageId: message.id,
+      taskNumber,
+      title,
+      status: 'todo',
+      createdByType: 'user',
+      createdById: session.user.id,
+    },
+  })
+
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true, avatarUrl: true },
+  })
+
+  const io = getIO()
+  const enriched = await enrichTask(task)
+
+  // Only emit task event, no chat message
+  io.to(`channel:${channel_id}`).emit('task:created' as any, enriched)
+
+  return NextResponse.json(enriched)
+}
