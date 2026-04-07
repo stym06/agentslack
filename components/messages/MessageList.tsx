@@ -43,6 +43,7 @@ export function MessageList({
   onOpenThread?: (messageId: string) => void
 }) {
   const [messages, setMessages] = useState<MessagePayload[]>([])
+  const [typingAgents, setTypingAgents] = useState<Map<string, string>>(new Map())
   const { socket, isConnected } = useSocket()
   const socketMsgIds = useRef(new Set<string>())
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -50,9 +51,11 @@ export function MessageList({
   useEffect(() => {
     if (!channelId) {
       setMessages([])
+      setTypingAgents(new Map())
       return
     }
     socketMsgIds.current.clear()
+    setTypingAgents(new Map())
     fetch(`/api/messages?channel_id=${channelId}`)
       .then(async (res) => {
         if (!res.ok) {
@@ -86,6 +89,14 @@ export function MessageList({
         socketMsgIds.current.add(message.id)
         setMessages((prev) => [...prev, message])
       }
+      // Clear typing indicator when agent sends a message
+      if (message.senderType === 'agent') {
+        setTypingAgents((prev) => {
+          const next = new Map(prev)
+          next.delete(message.senderId)
+          return next
+        })
+      }
     }
 
     const handleReplyCount = (data: { message_id: string; reply_count: number }) => {
@@ -96,13 +107,21 @@ export function MessageList({
       )
     }
 
+    const handleRouting = (data: { channelId: string; threadId: string | null; agentId: string; agentName: string }) => {
+      if (data.channelId === channelId && !data.threadId) {
+        setTypingAgents((prev) => new Map(prev).set(data.agentId, data.agentName))
+      }
+    }
+
     socket.on('message:new', handleNewMessage)
     socket.on('message:reply_count', handleReplyCount)
+    socket.on('agent:routing', handleRouting)
 
     return () => {
       socket.emit('channel:leave', channelId)
       socket.off('message:new', handleNewMessage)
       socket.off('message:reply_count', handleReplyCount)
+      socket.off('agent:routing', handleRouting)
     }
   }, [channelId, isConnected, socket])
 
@@ -110,7 +129,7 @@ export function MessageList({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages])
+  }, [messages, typingAgents])
 
   if (!channelId) {
     return (
@@ -185,6 +204,22 @@ export function MessageList({
           })}
         </div>
       ))}
+
+      {typingAgents.size > 0 && (
+        <div className="flex items-center gap-2 px-5 py-2">
+          <div className="flex gap-1">
+            <span className="h-2 w-2 animate-bounce rounded-full bg-purple-400 [animation-delay:0ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-purple-400 [animation-delay:150ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-purple-400 [animation-delay:300ms]" />
+          </div>
+          <span className="animate-pulse text-sm text-muted-foreground">
+            <span className="font-medium text-purple-600">
+              {[...typingAgents.values()].map((name) => `@${name}`).join(', ')}
+            </span>
+            {' '}is typing...
+          </span>
+        </div>
+      )}
     </div>
   )
 }

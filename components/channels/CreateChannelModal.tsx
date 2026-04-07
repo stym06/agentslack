@@ -1,6 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { Hash } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 export function CreateChannelModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
@@ -9,7 +20,6 @@ export function CreateChannelModal({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!name.trim() || isSubmitting) return
 
     setIsSubmitting(true)
@@ -25,7 +35,6 @@ export function CreateChannelModal({ onClose }: { onClose: () => void }) {
         throw new Error(err.error || 'Failed to create channel')
       }
 
-      // Success: close modal and reload page
       onClose()
       window.location.reload()
     } catch (error) {
@@ -37,58 +46,58 @@ export function CreateChannelModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-lg w-[500px]">
-        <h2 className="text-xl font-bold text-white mb-4">Create New Channel</h2>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <Hash className="size-5 text-muted-foreground" />
+            <DialogTitle>Create Channel</DialogTitle>
+          </div>
+          <DialogDescription>
+            Channels are where conversations happen. Create one for a topic or team.
+          </DialogDescription>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Channel Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., tech-team or #tech-team"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full p-3 bg-gray-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-              autoFocus
-            />
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Channel Name</label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">#</span>
+                <Input
+                  placeholder="e.g., tech-team, design, general"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                Description <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <textarea
+                placeholder="What's this channel about?"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                rows={3}
+              />
+            </div>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Description (Optional)
-            </label>
-            <textarea
-              placeholder="What's this channel about?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-3 bg-gray-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={3}
-            />
-          </div>
-
-          <div className="flex gap-4 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="cursor-pointer px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-              disabled={isSubmitting}
-            >
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isSubmitting || !name.trim()}
-            >
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !name.trim()}>
               {isSubmitting ? 'Creating...' : 'Create Channel'}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

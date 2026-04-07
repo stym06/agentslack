@@ -165,7 +165,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
   const [showCreate, setShowCreate] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [creating, setCreating] = useState(false)
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [expandedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const { socket } = useSocket()
 
   const fetchTasks = useCallback(() => {
@@ -258,7 +258,8 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden items-center">
+      <div className="w-full max-w-4xl flex flex-col flex-1 overflow-hidden">
       {/* Filter pills + New Task */}
       <div className="flex items-center gap-2 border-b px-4 py-3">
         <div className="flex gap-1">
@@ -341,7 +342,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                   <ChevronDown
                     className={cn(
                       'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
-                      collapsedGroups.has('__ungrouped') && '-rotate-90',
+                      !expandedGroups.has('__ungrouped') && '-rotate-90',
                     )}
                   />
                   <span className="text-sm font-semibold text-muted-foreground">Ungrouped</span>
@@ -349,7 +350,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                     {ungrouped.filter((t) => t.status === 'done').length}/{ungrouped.length} done
                   </span>
                 </button>
-                {!collapsedGroups.has('__ungrouped') && (
+                {expandedGroups.has('__ungrouped') && (
                   <div className="divide-y border-t">
                     {ungrouped.map((task) => (
                       <TaskRow key={task.id} task={task} onOpenTask={onOpenTask} setTasks={setTasks} indent />
@@ -361,7 +362,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
 
             {/* Grouped tasks */}
             {grouped.map((group) => {
-              const isCollapsed = collapsedGroups.has(group.id)
+              const isExpanded = expandedGroups.has(group.id)
               const doneCount = group.tasks.filter((t) => t.status === 'done').length
               return (
                 <div key={group.id} className="border-t">
@@ -372,7 +373,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                     <ChevronDown
                       className={cn(
                         'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
-                        isCollapsed && '-rotate-90',
+                        !isExpanded && '-rotate-90',
                       )}
                     />
                     <span className="text-sm font-semibold">{group.summary}</span>
@@ -387,7 +388,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                       />
                     </div>
                   </button>
-                  {!isCollapsed && (
+                  {isExpanded && (
                     <div className="divide-y border-t">
                       {group.tasks.map((task) => (
                         <TaskRow key={task.id} task={task} onOpenTask={onOpenTask} setTasks={setTasks} indent />
@@ -399,6 +400,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
             })}
           </div>
         )}
+      </div>
       </div>
     </div>
   )

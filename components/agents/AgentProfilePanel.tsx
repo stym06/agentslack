@@ -1,12 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Bot, Clock, Cpu, Hash, Sparkles, CircleDot } from 'lucide-react'
+import { X, Bot, Clock, Cpu, Hash, CircleDot, Sparkles, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useSocket } from '@/lib/socket/useSocket'
 import { cn } from '@/lib/utils'
 import type { Agent } from '@/types'
+import { AgentProcessControls } from './AgentProcessControls'
+import { AgentInstructionsEditor } from './AgentInstructionsEditor'
+import { AgentSkillsPanel } from './AgentSkillsPanel'
+import { AgentMemoryPanel } from './AgentMemoryPanel'
 
 type AgentProfile = {
   id: string
@@ -15,11 +19,8 @@ type AgentProfile = {
   avatar_url: string | null
   model: string
   status: Agent['status']
-  // Prisma returns camelCase, but we accept both forms
   createdAt?: string
   created_at?: string
-  soulMd?: string | null
-  soul_md?: string | null
   process: {
     running: boolean
     ready: boolean
@@ -64,6 +65,32 @@ function formatModel(model: string) {
     'anthropic/claude-haiku-3-5': 'Claude Haiku 3.5',
   }
   return names[model] || model
+}
+
+function CollapsibleSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full cursor-pointer items-center gap-1.5 py-1"
+      >
+        <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', !open && '-rotate-90')} />
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </h4>
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  )
 }
 
 export function AgentProfilePanel({
@@ -121,7 +148,7 @@ export function AgentProfilePanel({
       ) : (
         <div className="flex-1 overflow-y-auto">
           {/* Agent identity */}
-          <div className="flex flex-col items-center px-6 py-6">
+          <div className="flex flex-col items-center px-6 pt-6 pb-4">
             <div className="flex size-[72px] items-center justify-center rounded-lg bg-[#5E2C5F]/10">
               <Bot className="size-8 text-[#5E2C5F]" />
             </div>
@@ -134,15 +161,17 @@ export function AgentProfilePanel({
             </div>
           </div>
 
+          {/* Process controls */}
+          <div className="px-6 pb-4">
+            <AgentProcessControls agentId={agentId} status={agent.status} />
+          </div>
+
           <Separator />
 
-          {/* Details */}
-          <div className="space-y-4 px-6 py-4">
+          {/* Collapsible sections */}
+          <div className="space-y-1 px-6 py-4">
             {/* Process info */}
-            <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Process
-              </h4>
+            <CollapsibleSection title="Process" defaultOpen>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <CircleDot className="size-4 text-muted-foreground" />
@@ -165,30 +194,46 @@ export function AgentProfilePanel({
                   </span>
                 </div>
               </div>
-            </div>
+            </CollapsibleSection>
 
             <Separator />
 
             {/* Model */}
-            <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Model
-              </h4>
+            <div className="py-2">
               <div className="flex items-center gap-2 text-sm">
                 <Cpu className="size-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Model:</span>
                 <span>{formatModel(agent.model)}</span>
               </div>
             </div>
 
             <Separator />
 
+            {/* Instructions */}
+            <CollapsibleSection title="Instructions" defaultOpen>
+              <AgentInstructionsEditor agentId={agentId} />
+            </CollapsibleSection>
+
+            <Separator />
+
+            {/* Skills */}
+            <CollapsibleSection title="Skills">
+              <AgentSkillsPanel agentId={agentId} />
+            </CollapsibleSection>
+
+            <Separator />
+
+            {/* Memory */}
+            <CollapsibleSection title="Memory">
+              <AgentMemoryPanel agentId={agentId} />
+            </CollapsibleSection>
+
+            <Separator />
+
             {/* Channels */}
             {agent.channelAgents.length > 0 && (
               <>
-                <div>
-                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Channels
-                  </h4>
+                <CollapsibleSection title="Channels">
                   <div className="space-y-1">
                     {agent.channelAgents.map((ca) => (
                       <div key={ca.channel.id} className="flex items-center gap-2 text-sm">
@@ -197,36 +242,17 @@ export function AgentProfilePanel({
                       </div>
                     ))}
                   </div>
-                </div>
+                </CollapsibleSection>
                 <Separator />
               </>
             )}
 
             {/* Created */}
-            <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Created
-              </h4>
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="size-4 text-muted-foreground" />
-                <span>{formatDate(agent.createdAt || agent.created_at || '')}</span>
-              </div>
+            <div className="flex items-center gap-2 py-2 text-sm">
+              <Clock className="size-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Created:</span>
+              <span>{formatDate(agent.createdAt || agent.created_at || '')}</span>
             </div>
-
-            {/* Instructions */}
-            {(agent.soulMd || agent.soul_md) && (
-              <>
-                <Separator />
-                <div>
-                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Instructions
-                  </h4>
-                  <p className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
-                    {agent.soulMd || agent.soul_md}
-                  </p>
-                </div>
-              </>
-            )}
           </div>
         </div>
       )}

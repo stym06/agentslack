@@ -146,17 +146,31 @@ async function deliverToAgents(
     include: { agent: true },
   })
 
-  // Only deliver to @mentioned agents
+  // Deliver to @mentioned agents, or if in a thread with no mentions,
+  // deliver to the last agent who sent a message in that thread
   const mentions = extractMentions(userMessageContent)
-  if (mentions.length === 0) return
 
-  const agentsToDeliver = channelAgents.filter((ca) =>
+  let agentsToDeliver = channelAgents.filter((ca) =>
     mentions.some(
       (m) =>
         ca.agent.name.toLowerCase() === m ||
         ca.agent.openclawId.toLowerCase() === m,
     ),
   )
+
+  // Thread reply with no mention → route to last agent in thread
+  if (agentsToDeliver.length === 0 && threadId) {
+    const lastAgentMessage = await db.message.findFirst({
+      where: { threadId, senderType: 'agent' },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (lastAgentMessage) {
+      const match = channelAgents.find((ca) => ca.agent.id === lastAgentMessage.senderId)
+      if (match) agentsToDeliver = [match]
+    }
+  }
+
+  if (agentsToDeliver.length === 0) return
 
   for (const ca of agentsToDeliver) {
     const agent = ca.agent
@@ -166,12 +180,26 @@ async function deliverToAgents(
       continue
     }
 
-    // Mark agent as busy
+    // Mark agent as busy and notify clients
     await db.agent.update({
       where: { id: agent.id },
       data: { status: 'busy' },
     })
     io.emit('agent:status', { agent_id: agent.id, status: 'busy' })
+    io.to(`channel:${channelId}`).emit('agent:routing', {
+      channelId,
+      threadId: threadId || null,
+      agentId: agent.id,
+      agentName: agent.name,
+    })
+    if (threadId) {
+      io.to(`thread:${threadId}`).emit('agent:routing', {
+        channelId,
+        threadId,
+        agentId: agent.id,
+        agentName: agent.name,
+      })
+    }
 
     // Build context for threads
     let messageToSend = userMessageContent

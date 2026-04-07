@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { getAgentDaemon } from '@/server/agent-daemon'
+import { ensureAgentDir } from '@/lib/agents/directory'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -88,6 +89,9 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Create agent directory and write CLAUDE.md
+    const dirPath = ensureAgentDir(agent.id, soul_md)
+
     // Start the agent's Claude Code process
     const daemon = getAgentDaemon()
     daemon.startAgent({
@@ -97,6 +101,7 @@ export async function POST(req: NextRequest) {
       model: agent.model,
       soulMd: soul_md,
       isAdmin: false,
+      dirPath,
     })
 
     return NextResponse.json(agent)

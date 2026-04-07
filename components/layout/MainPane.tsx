@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { MessageSquare, ListTodo } from 'lucide-react'
+import { MessageSquare, ListTodo, Users } from 'lucide-react'
 import { ChannelHeader } from '@/components/messages/ChannelHeader'
 import { MessageList } from '@/components/messages/MessageList'
 import { MessageInput } from '@/components/messages/MessageInput'
 import { ThreadPanel } from '@/components/threads/ThreadPanel'
 import { TaskList } from '@/components/tasks/TaskList'
+import { ChannelAgentsPanel } from '@/components/channels/ChannelAgentsPanel'
 import { cn } from '@/lib/utils'
 import type { Channel } from '@/types'
 
@@ -19,7 +20,7 @@ export function MainPane({
 }) {
   const activeChannel = channels.find((c) => c.id === channelId)
   const [openThreadId, setOpenThreadId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'chat' | 'tasks'>('chat')
+  const [activeTab, setActiveTab] = useState<'chat' | 'tasks' | 'agents'>('chat')
 
   const showThread = !!openThreadId
 
@@ -27,6 +28,12 @@ export function MainPane({
     setActiveTab('tasks')
     setOpenThreadId(messageId)
   }
+
+  const tabs = [
+    { key: 'chat' as const, label: 'Chat', icon: MessageSquare },
+    { key: 'tasks' as const, label: 'Tasks', icon: ListTodo },
+    { key: 'agents' as const, label: 'Agents', icon: Users },
+  ]
 
   return (
     <div className="flex h-full">
@@ -39,30 +46,21 @@ export function MainPane({
           {/* Tab toggle */}
           {channelId && (
             <div className="flex items-center gap-1 border-b px-4">
-              <button
-                onClick={() => setActiveTab('chat')}
-                className={cn(
-                  'flex cursor-pointer items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-                  activeTab === 'chat'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground',
-                )}
-              >
-                <MessageSquare className="h-4 w-4" />
-                Chat
-              </button>
-              <button
-                onClick={() => setActiveTab('tasks')}
-                className={cn(
-                  'flex cursor-pointer items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-                  activeTab === 'tasks'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground',
-                )}
-              >
-                <ListTodo className="h-4 w-4" />
-                Tasks
-              </button>
+              {tabs.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                    activeTab === key
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              ))}
             </div>
           )}
 
@@ -72,8 +70,10 @@ export function MainPane({
               <MessageList channelId={channelId} onOpenThread={setOpenThreadId} />
               <MessageInput channelId={channelId} />
             </>
-          ) : channelId ? (
+          ) : activeTab === 'tasks' && channelId ? (
             <TaskList channelId={channelId} onOpenTask={handleOpenTask} />
+          ) : activeTab === 'agents' && channelId ? (
+            <ChannelAgentsPanel channelId={channelId} />
           ) : null}
         </div>
       </div>

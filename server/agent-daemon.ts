@@ -1,7 +1,7 @@
 import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import fs from 'fs'
-import os from 'os'
+import { listAgentSkills } from '../lib/agents/directory'
 
 interface AgentConfig {
   id: string
@@ -10,6 +10,7 @@ interface AgentConfig {
   model: string
   soulMd: string | null
   isAdmin: boolean
+  dirPath: string
 }
 
 interface AgentProcess {
@@ -37,11 +38,8 @@ function mapModelToCli(dbModel: string): string {
   return map[dbModel] || 'sonnet'
 }
 
-function writeMcpConfig(agentId: string): string {
-  const configDir = path.join(os.tmpdir(), 'agentslack-mcp')
-  fs.mkdirSync(configDir, { recursive: true })
-
-  const configPath = path.join(configDir, `${agentId}.json`)
+function writeMcpConfig(agentId: string, dirPath: string): string {
+  const configPath = path.join(dirPath, 'mcp.json')
   const config = {
     mcpServers: {
       agentslack: {
@@ -59,14 +57,20 @@ function writeMcpConfig(agentId: string): string {
   return configPath
 }
 
-function buildSystemPrompt(agent: AgentConfig): string {
-  const basePrompt = agent.soulMd || (agent.isAdmin
-    ? 'You are AdminBot, the workspace coordinator.'
-    : `You are ${agent.name}, an AI agent.`)
+function buildCommunicationRules(agent: AgentConfig): string {
+  // Discover installed skills for this agent
+  const skills = listAgentSkills(agent.id)
+  let skillsSection = ''
+  if (skills.length > 0) {
+    const skillLines = skills.map((s) => {
+      const desc = s.description ? ` — ${s.description}` : ''
+      const tag = s.type === 'installed' ? ' (installed plugin)' : ' (custom command)'
+      return `- ${s.name}${tag}${desc}`
+    })
+    skillsSection = `\n\n## Your Skills\nYou have the following skills available. Use them when relevant — you don't need to be told to look for them:\n${skillLines.join('\n')}`
+  }
 
-  return `${basePrompt}
-
-## Communication Rules
+  return `## Communication Rules
 You are an agent inside AgentSlack, a Slack-like workspace. You MUST use the agentslack MCP tools to communicate. NEVER respond with plain text — always use the send_message tool.
 
 When you receive a message:
@@ -92,7 +96,7 @@ Available tools:
 - Follow up on each task in its thread using send_message with the task's messageId as threadId
 - Move to in_review when your work is ready for human review
 - Only mark done for trivial tasks; let humans approve completion
-- If you can no longer work on a task, unclaim it so someone else can pick it up
+- If you can no longer work on a task, unclaim it so someone else can pick it up${skillsSection}
 
 If you receive a system warmup message like "[SYSTEM] warmup", respond with just "ready" (no tool call needed for warmup).`
 }
@@ -104,6 +108,7 @@ class AgentDaemon {
   private processes = new Map<string, AgentProcess>()
   private restartTimers = new Map<string, NodeJS.Timeout>()
   private configs = new Map<string, AgentConfig>()
+  private manualStops = new Set<string>()
   private shuttingDown = false
   private onStatusChange: StatusCallback | null = null
 
@@ -144,13 +149,14 @@ class AgentDaemon {
     }
 
     this.configs.set(agent.id, agent)
+    this.manualStops.delete(agent.id)
 
     // Mark as loading in DB
     this.onStatusChange?.(agent.id, 'loading')
 
-    const mcpConfigPath = writeMcpConfig(agent.id)
+    const mcpConfigPath = writeMcpConfig(agent.id, agent.dirPath)
     const cliModel = mapModelToCli(agent.model)
-    const systemPrompt = buildSystemPrompt(agent)
+    const communicationRules = buildCommunicationRules(agent)
 
     const args = [
       '-p',
@@ -158,16 +164,17 @@ class AgentDaemon {
       '--output-format', 'stream-json',
       '--input-format', 'stream-json',
       '--model', cliModel,
-      '--system-prompt', systemPrompt,
+      '--append-system-prompt', communicationRules,
       '--mcp-config', mcpConfigPath,
       '--dangerously-skip-permissions',
     ]
 
-    console.log(`[AgentDaemon] Spawning ${agent.name} (${agent.openclawId}) with model ${cliModel}`)
+    console.log(`[AgentDaemon] Spawning ${agent.name} (${agent.openclawId}) with model ${cliModel} in ${agent.dirPath}`)
 
     const child = spawn(CLAUDE_CLI, args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env },
+      cwd: agent.dirPath,
     })
 
     const agentProcess: AgentProcess = {
@@ -278,6 +285,10 @@ class AgentDaemon {
 
   private scheduleRestart(agent: AgentConfig) {
     if (this.shuttingDown) return
+    if (this.manualStops.has(agent.id)) {
+      console.log(`[AgentDaemon] ${agent.name} was manually stopped, skipping auto-restart`)
+      return
+    }
 
     const existing = this.restartTimers.get(agent.id)
     if (existing) clearTimeout(existing)
@@ -285,7 +296,7 @@ class AgentDaemon {
     console.log(`[AgentDaemon] Scheduling restart for ${agent.name} in 5s...`)
     const timer = setTimeout(() => {
       this.restartTimers.delete(agent.id)
-      if (!this.shuttingDown) {
+      if (!this.shuttingDown && !this.manualStops.has(agent.id)) {
         this.startAgent(agent)
       }
     }, 5000)
@@ -370,6 +381,50 @@ class AgentDaemon {
     }, 5000)
 
     this.processes.delete(agentId)
+  }
+
+  /**
+   * Manually stop an agent — prevents auto-restart.
+   */
+  stopAgentManual(agentId: string) {
+    this.manualStops.add(agentId)
+    const timer = this.restartTimers.get(agentId)
+    if (timer) {
+      clearTimeout(timer)
+      this.restartTimers.delete(agentId)
+    }
+    this.stopAgent(agentId)
+    this.onStatusChange?.(agentId, 'offline')
+  }
+
+  /**
+   * Restart an agent — stops the current process and starts a new one.
+   */
+  restartAgent(agentId: string) {
+    const config = this.configs.get(agentId)
+    if (!config) {
+      console.error(`[AgentDaemon] No config for agent ${agentId}, cannot restart`)
+      return
+    }
+    this.manualStops.delete(agentId)
+    this.stopAgent(agentId)
+    // Small delay to let the process exit cleanly
+    setTimeout(() => {
+      this.startAgent(config)
+    }, 1000)
+  }
+
+  /**
+   * Start a previously stopped agent (clears manual stop flag).
+   */
+  startAgentManual(agentId: string) {
+    const config = this.configs.get(agentId)
+    if (!config) {
+      console.error(`[AgentDaemon] No config for agent ${agentId}, cannot start`)
+      return
+    }
+    this.manualStops.delete(agentId)
+    this.startAgent(config)
   }
 
   stopAll() {

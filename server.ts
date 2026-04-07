@@ -7,6 +7,7 @@ import next from 'next'
 import { initSocketServer, getIO } from './server/socket-server'
 import { startStandupCron } from './lib/cron/standup'
 import { createAgentDaemon, AgentConfig } from './server/agent-daemon'
+import { ensureAgentDir } from './lib/agents/directory'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -47,14 +48,18 @@ app.prepare().then(async () => {
         data: { status: 'loading' },
       })
 
-      const agentConfigs: AgentConfig[] = agents.map((a) => ({
-        id: a.id,
-        openclawId: a.openclawId,
-        name: a.name,
-        model: a.model,
-        soulMd: a.soulMd,
-        isAdmin: a.isAdmin,
-      }))
+      const agentConfigs: AgentConfig[] = agents.map((a) => {
+        const dirPath = ensureAgentDir(a.id, a.soulMd || undefined)
+        return {
+          id: a.id,
+          openclawId: a.openclawId,
+          name: a.name,
+          model: a.model,
+          soulMd: a.soulMd,
+          isAdmin: a.isAdmin,
+          dirPath,
+        }
+      })
 
       const daemon = createAgentDaemon()
 
