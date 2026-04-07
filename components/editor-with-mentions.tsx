@@ -38,6 +38,7 @@ interface EditorWithMentionsProps {
   disabled?: boolean
   onSubmit: (body: string) => Promise<void>
   editorKey: number
+  extraToolbarContent?: React.ReactNode
 }
 
 export function EditorWithMentions({
@@ -46,6 +47,7 @@ export function EditorWithMentions({
   disabled = false,
   onSubmit,
   editorKey,
+  extraToolbarContent,
 }: EditorWithMentionsProps) {
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -130,6 +132,7 @@ export function EditorWithMentions({
         onSubmit={handleSubmit}
         disabled={disabled}
         placeholder={placeholder}
+        extraToolbarContent={extraToolbarContent}
       />
     </div>
   )

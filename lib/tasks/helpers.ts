@@ -72,6 +72,7 @@ export async function enrichTask(task: {
   id: string
   channelId: string
   groupId?: string | null
+  projectId?: string | null
   messageId: string
   taskNumber: number
   title: string
@@ -95,6 +96,7 @@ export async function enrichTask(task: {
     id: task.id,
     channel_id: task.channelId,
     group_id: task.groupId ?? null,
+    project_id: task.projectId ?? null,
     message_id: task.messageId,
     task_number: task.taskNumber,
     title: task.title,

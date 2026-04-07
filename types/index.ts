@@ -69,6 +69,7 @@ export type Task = {
   id: string
   channel_id: string
   message_id: string
+  project_id: string | null
   task_number: number
   title: string
   status: 'todo' | 'in_progress' | 'in_review' | 'done'
@@ -84,6 +85,28 @@ export type Task = {
   claimed_by_name?: string
   group_summary?: string
   comment_count?: number
+}
+
+export type Project = {
+  id: string
+  channel_id: string
+  name: string
+  repo_path: string
+  git_url: string | null
+  status: 'active' | 'cloning' | 'error'
+  created_at: Date
+}
+
+export type AgentSession = {
+  id: string
+  agent_id: string
+  task_id: string
+  project_id: string
+  worktree_path: string | null
+  branch_name: string | null
+  status: 'active' | 'completed' | 'terminated'
+  created_at: Date
+  completed_at: Date | null
 }
 
 export type ChannelAgent = {
@@ -116,4 +139,9 @@ export type SocketEvents = {
   }) => void
   'task:created': (task: Task & { channel_id: string }) => void
   'task:updated': (task: Task & { channel_id: string }) => void
+  'project:created': (project: Project) => void
+  'project:updated': (project: Project) => void
+  'project:deleted': (data: { project_id: string; channel_id: string }) => void
+  'session:started': (session: AgentSession) => void
+  'session:stopped': (data: { session_id: string; agent_id: string; task_id: string }) => void
 }

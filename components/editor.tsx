@@ -29,6 +29,7 @@ interface EditorProps {
   innerRef?: MutableRefObject<Quill | null>
   variant?: 'create' | 'update'
   onTextChange?: (text: string, cursorIndex: number) => void
+  extraToolbarContent?: React.ReactNode
 }
 
 const Editor = ({
@@ -40,6 +41,7 @@ const Editor = ({
   innerRef,
   variant = 'create',
   onTextChange: onTextChangeProp,
+  extraToolbarContent,
 }: EditorProps) => {
   const [text, setText] = useState('')
   const [image, setImage] = useState<File | null>(null)
@@ -220,6 +222,8 @@ const Editor = ({
               </Button>
             </Hint>
           )}
+
+          {variant === 'create' && extraToolbarContent}
 
           {variant === 'update' && (
             <div className="ml-auto flex items-center gap-x-2">

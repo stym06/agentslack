@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getIO } from '@/server/socket-server'
+import { getAgentDaemon } from '@/server/agent-daemon'
 import { enrichTask, emitTaskSystemMessage } from '@/lib/tasks/helpers'
 
 const VALID_STATUSES = ['todo', 'in_progress', 'in_review', 'done']
@@ -60,6 +61,30 @@ export async function POST(
     'agent',
     `${agent?.name ?? 'Agent'} moved #${task.taskNumber} "${task.title}" to ${statusLabel}`,
   )
+
+  // Handle session lifecycle on status transitions
+  if (status === 'done') {
+    // Stop the session CLI, mark session completed, keep worktree
+    const activeSession = await db.agentSession.findFirst({
+      where: { agentId, taskId: task.id, status: 'active' },
+    })
+
+    if (activeSession) {
+      const daemon = getAgentDaemon()
+      daemon.stopSession(agentId, task.id)
+
+      await db.agentSession.update({
+        where: { id: activeSession.id },
+        data: { status: 'completed', completedAt: new Date() },
+      })
+
+      io.to(`channel:${channelId}`).emit('session:stopped' as any, {
+        session_id: activeSession.id,
+        agent_id: agentId,
+        task_id: task.id,
+      })
+    }
+  }
 
   return NextResponse.json({ success: true, task: enriched })
 }

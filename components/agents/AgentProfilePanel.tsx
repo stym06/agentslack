@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react'
 import { X, Bot, Clock, Cpu, Hash, CircleDot, Sparkles, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { useSocket } from '@/lib/socket/useSocket'
 import { cn } from '@/lib/utils'
 import type { Agent } from '@/types'
@@ -55,16 +63,114 @@ function formatDate(date: string | Date) {
   })
 }
 
+const MODEL_OPTIONS = [
+  { value: 'anthropic/claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+  { value: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
+  { value: 'anthropic/claude-opus-4-6', label: 'Claude Opus 4.6' },
+  { value: 'anthropic/claude-opus-4', label: 'Claude Opus 4' },
+  { value: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5' },
+  { value: 'anthropic/claude-haiku-3-5', label: 'Claude Haiku 3.5' },
+]
+
 function formatModel(model: string) {
-  const names: Record<string, string> = {
-    'anthropic/claude-sonnet-4-5': 'Claude Sonnet 4.5',
-    'anthropic/claude-sonnet-4-6': 'Claude Sonnet 4.6',
-    'anthropic/claude-opus-4': 'Claude Opus 4',
-    'anthropic/claude-opus-4-6': 'Claude Opus 4.6',
-    'anthropic/claude-haiku-4-5': 'Claude Haiku 4.5',
-    'anthropic/claude-haiku-3-5': 'Claude Haiku 3.5',
+  return MODEL_OPTIONS.find((m) => m.value === model)?.label || model
+}
+
+function ModelDropdown({
+  agentId,
+  currentModel,
+  onModelChanged,
+}: {
+  agentId: string
+  currentModel: string
+  onModelChanged: (model: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [pendingModel, setPendingModel] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const handleSelect = (model: string) => {
+    setOpen(false)
+    if (model === currentModel) return
+    setPendingModel(model)
   }
-  return names[model] || model
+
+  const handleConfirm = async () => {
+    if (!pendingModel) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/agents/${agentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: pendingModel }),
+      })
+      if (!res.ok) throw new Error('Failed to update model')
+
+      await fetch(`/api/agents/${agentId}/restart`, { method: 'POST' })
+      onModelChanged(pendingModel)
+    } catch (err) {
+      console.error('Failed to change model:', err)
+    } finally {
+      setSaving(false)
+      setPendingModel(null)
+    }
+  }
+
+  return (
+    <>
+      <div className="relative">
+        <button
+          onClick={() => setOpen(!open)}
+          disabled={saving}
+          className="cursor-pointer inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
+        >
+          {saving ? 'Restarting...' : formatModel(currentModel)}
+          <ChevronDown className="size-3 text-muted-foreground" />
+        </button>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div className="absolute left-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-md border bg-popover shadow-lg">
+              {MODEL_OPTIONS.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => handleSelect(m.value)}
+                  className={cn(
+                    'flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent',
+                    currentModel === m.value && 'bg-accent font-medium',
+                  )}
+                >
+                  {currentModel === m.value && (
+                    <span className="size-1.5 rounded-full bg-primary" />
+                  )}
+                  <span className={currentModel === m.value ? '' : 'ml-[14px]'}>{m.label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <Dialog open={!!pendingModel} onOpenChange={(isOpen) => { if (!isOpen) setPendingModel(null) }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Change model</DialogTitle>
+            <DialogDescription>
+              Switch to <span className="font-medium text-foreground">{pendingModel ? formatModel(pendingModel) : ''}</span>? The agent will be restarted with the new model.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingModel(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm} disabled={saving}>
+              {saving ? 'Restarting...' : 'Confirm & Restart'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
 }
 
 function CollapsibleSection({
@@ -203,7 +309,11 @@ export function AgentProfilePanel({
               <div className="flex items-center gap-2 text-sm">
                 <Cpu className="size-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Model:</span>
-                <span>{formatModel(agent.model)}</span>
+                <ModelDropdown
+                  agentId={agentId}
+                  currentModel={agent.model}
+                  onModelChanged={(newModel) => setAgent((prev) => prev ? { ...prev, model: newModel } : prev)}
+                />
               </div>
             </div>
 

@@ -43,6 +43,7 @@ interface MessageProps {
     claimed_by_name?: string | null
   } | null
   isSystem?: boolean
+  onOpenTaskByNumber?: (taskNumber: number) => void
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -73,6 +74,7 @@ export const Message = ({
   onOpenThread,
   task,
   isSystem,
+  onOpenTaskByNumber,
 }: MessageProps) => {
   const avatarFallback = authorName.charAt(0).toUpperCase()
   const dateObj = new Date(createdAt)
@@ -86,9 +88,32 @@ export const Message = ({
 
   // System messages (task events) render as centered muted text
   if (isSystem) {
+    // Parse #N references and make them clickable
+    const parts = body.split(/(#\d+)/g)
+    const hasTaskRef = parts.some((p) => /^#\d+$/.test(p))
+
     return (
       <div className="flex items-center justify-center py-1">
-        <span className="text-xs text-muted-foreground">{body}</span>
+        <span className="text-xs text-muted-foreground">
+          {hasTaskRef && onOpenTaskByNumber
+            ? parts.map((part, i) => {
+                const match = part.match(/^#(\d+)$/)
+                if (match) {
+                  const num = parseInt(match[1], 10)
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => onOpenTaskByNumber(num)}
+                      className="cursor-pointer font-semibold text-primary hover:underline"
+                    >
+                      {part}
+                    </button>
+                  )
+                }
+                return <span key={i}>{part}</span>
+              })
+            : body}
+        </span>
       </div>
     )
   }

@@ -48,6 +48,7 @@ model Agent {
   workspace          Workspace            @relation(fields: [workspaceId], references: [id])
   channelAgents      ChannelAgent[]
   threadParticipants ThreadParticipant[]
+  sessions           AgentSession[]
 
   @@index([workspaceId], name: "idx_agents_workspace")
   @@map("agents")
@@ -66,6 +67,7 @@ model Channel {
   messages      Message[]
   tasks         Task[]
   taskGroups    TaskGroup[]
+  projects      Project[]
 
   @@map("channels")
 }
@@ -136,6 +138,7 @@ model Task {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   channelId     String   @map("channel_id") @db.Uuid
   groupId       String?  @map("group_id") @db.Uuid
+  projectId     String?  @map("project_id") @db.Uuid
   messageId     String   @unique @map("message_id") @db.Uuid
   taskNumber    Int      @map("task_number")
   title         String
@@ -147,12 +150,52 @@ model Task {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  channel Channel   @relation(fields: [channelId], references: [id])
-  message Message   @relation(fields: [messageId], references: [id])
-  group   TaskGroup? @relation(fields: [groupId], references: [id])
+  channel  Channel        @relation(fields: [channelId], references: [id])
+  message  Message        @relation(fields: [messageId], references: [id])
+  group    TaskGroup?     @relation(fields: [groupId], references: [id])
+  project  Project?       @relation(fields: [projectId], references: [id])
+  sessions AgentSession[]
 
   @@unique([channelId, taskNumber])
   @@index([channelId, status], name: "idx_tasks_channel_status")
   @@index([groupId], name: "idx_tasks_group")
+  @@index([projectId], name: "idx_tasks_project")
   @@map("tasks")
+}
+
+model Project {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId String   @map("channel_id") @db.Uuid
+  name      String
+  repoPath  String   @map("repo_path")
+  gitUrl    String?  @map("git_url")
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  channel  Channel        @relation(fields: [channelId], references: [id])
+  tasks    Task[]
+  sessions AgentSession[]
+
+  @@index([channelId], name: "idx_projects_channel")
+  @@map("projects")
+}
+
+model AgentSession {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentId      String    @map("agent_id") @db.Uuid
+  taskId       String    @map("task_id") @db.Uuid
+  projectId    String    @map("project_id") @db.Uuid
+  worktreePath String?   @map("worktree_path")
+  branchName   String?   @map("branch_name")
+  status       String    @default("active")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz()
+
+  agent   Agent   @relation(fields: [agentId], references: [id])
+  task    Task    @relation(fields: [taskId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([agentId, taskId])
+  @@index([agentId, status], name: "idx_sessions_agent_status")
+  @@map("agent_sessions")
 }

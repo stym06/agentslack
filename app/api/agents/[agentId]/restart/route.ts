@@ -24,6 +24,7 @@ export async function POST(
   getIO().emit('agent:status', { agent_id: agentId, status: 'loading' })
 
   const daemon = getAgentDaemon()
+  daemon.updateConfig(agentId, { model: agent.model, soulMd: agent.soulMd })
   daemon.restartAgent(agentId)
 
   return NextResponse.json({ success: true })

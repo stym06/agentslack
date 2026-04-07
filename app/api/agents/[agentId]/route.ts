@@ -4,6 +4,44 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { getAgentDaemon } from '@/server/agent-daemon'
 
+// PUT /api/agents/[agentId] — Update agent fields
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ agentId: string }> }
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { agentId } = await params
+  const body = await req.json()
+
+  const workspace = await db.workspace.findFirst({
+    where: { userId: session.user.id },
+  })
+  if (!workspace) {
+    return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+  }
+
+  const agent = await db.agent.findFirst({
+    where: { id: agentId, workspaceId: workspace.id },
+  })
+  if (!agent) {
+    return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
+  }
+
+  const data: Record<string, unknown> = {}
+  if (body.model) data.model = body.model
+
+  const updated = await db.agent.update({
+    where: { id: agentId },
+    data,
+  })
+
+  return NextResponse.json(updated)
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ agentId: string }> }

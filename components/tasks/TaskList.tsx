@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, ArrowRight, ChevronDown, MessageSquare } from 'lucide-react'
+import { Plus, ArrowRight, ChevronDown, MessageSquare, GitBranch } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Task, TaskGroup } from '@/types'
 import { useSocket } from '@/lib/socket/useSocket'
+import { AssignAgentDropdown } from './AssignAgentDropdown'
 
 const STATUS_FILTERS = ['all', 'todo', 'in_progress', 'in_review', 'done'] as const
 const STATUS_LABELS: Record<string, string> = {
@@ -101,11 +102,13 @@ function StatusDropdown({
 
 function TaskRow({
   task,
+  channelId,
   onOpenTask,
   setTasks,
   indent,
 }: {
   task: Task
+  channelId: string
   onOpenTask: (messageId: string) => void
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>
   indent?: boolean
@@ -123,7 +126,7 @@ function TaskRow({
         status={task.status}
         onStatusChange={(newStatus) => {
           setTasks((prev) =>
-            prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)),
+            prev.map((t) => (t.id === task.id ? { ...t, status: newStatus as Task['status'] } : t)),
           )
         }}
       />
@@ -133,17 +136,28 @@ function TaskRow({
       >
         {task.title}
       </span>
+      {task.project_id && (
+        <span className="flex items-center gap-0.5 text-xs text-muted-foreground" title="Has project worktree">
+          <GitBranch className="h-3 w-3" />
+        </span>
+      )}
       {(task.comment_count ?? 0) > 0 && (
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <MessageSquare className="h-3 w-3" />
           {task.comment_count}
         </span>
       )}
-      {task.claimed_by_name && (
+      {task.claimed_by_name ? (
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <ArrowRight className="h-3 w-3" />
           @{task.claimed_by_name}
         </span>
+      ) : (
+        <AssignAgentDropdown
+          taskId={task.id}
+          channelId={channelId}
+          currentAgentId={task.claimed_by_id}
+        />
       )}
       {task.created_by_name && (
         <span className="text-xs text-muted-foreground">by @{task.created_by_name}</span>
@@ -192,7 +206,35 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
   useEffect(() => {
     if (!socket) return
 
-    const handleTaskUpdate = (task: Task & { channel_id: string }) => {
+    const handleTaskCreated = (task: Task & { channel_id: string }) => {
+      if (task.channel_id !== channelId) return
+      setTasks((prev) => {
+        if (prev.some((t) => t.id === task.id)) return prev
+        return [...prev, task]
+      })
+      // If the task has a group_id we don't know about, refetch groups
+      if (task.group_id) {
+        // Auto-expand the group
+        setCollapsedGroups((prev) => {
+          const next = new Set(prev)
+          next.add(task.group_id!)
+          return next
+        })
+        setGroups((prev) => {
+          if (prev.some((g) => g.id === task.group_id)) return prev
+          // Refetch groups
+          fetch(`/api/tasks?channel_id=${channelId}&status=all`)
+            .then((res) => res.ok ? res.json() : { groups: [] })
+            .then((data) => {
+              if (Array.isArray(data.groups)) setGroups(data.groups)
+            })
+            .catch(() => {})
+          return prev
+        })
+      }
+    }
+
+    const handleTaskUpdated = (task: Task & { channel_id: string }) => {
       if (task.channel_id !== channelId) return
       setTasks((prev) => {
         const idx = prev.findIndex((t) => t.id === task.id)
@@ -205,12 +247,12 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
       })
     }
 
-    socket.on('task:created' as any, handleTaskUpdate)
-    socket.on('task:updated' as any, handleTaskUpdate)
+    socket.on('task:created' as any, handleTaskCreated)
+    socket.on('task:updated' as any, handleTaskUpdated)
 
     return () => {
-      socket.off('task:created' as any, handleTaskUpdate)
-      socket.off('task:updated' as any, handleTaskUpdate)
+      socket.off('task:created' as any, handleTaskCreated)
+      socket.off('task:updated' as any, handleTaskUpdated)
     }
   }, [socket, channelId])
 
@@ -353,7 +395,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                 {expandedGroups.has('__ungrouped') && (
                   <div className="divide-y border-t">
                     {ungrouped.map((task) => (
-                      <TaskRow key={task.id} task={task} onOpenTask={onOpenTask} setTasks={setTasks} indent />
+                      <TaskRow key={task.id} task={task} channelId={channelId} onOpenTask={onOpenTask} setTasks={setTasks} indent />
                     ))}
                   </div>
                 )}
@@ -391,7 +433,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                   {isExpanded && (
                     <div className="divide-y border-t">
                       {group.tasks.map((task) => (
-                        <TaskRow key={task.id} task={task} onOpenTask={onOpenTask} setTasks={setTasks} indent />
+                        <TaskRow key={task.id} task={task} channelId={channelId} onOpenTask={onOpenTask} setTasks={setTasks} indent />
                       ))}
                     </div>
                   )}

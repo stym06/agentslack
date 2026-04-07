@@ -78,8 +78,6 @@ export function MessageList({
   useEffect(() => {
     if (!channelId || !isConnected) return
 
-    socket.emit('channel:join', channelId)
-
     const handleNewMessage = (message: MessagePayload) => {
       if (message.channelId === channelId && !message.threadId) {
         if (socketMsgIds.current.has(message.id)) return
@@ -118,7 +116,6 @@ export function MessageList({
     socket.on('agent:routing', handleRouting)
 
     return () => {
-      socket.emit('channel:leave', channelId)
       socket.off('message:new', handleNewMessage)
       socket.off('message:reply_count', handleReplyCount)
       socket.off('agent:routing', handleRouting)
@@ -199,6 +196,15 @@ export function MessageList({
                     : null
                 }
                 isSystem={isSystem}
+                onOpenTaskByNumber={isSystem ? async (taskNumber: number) => {
+                  try {
+                    const res = await fetch(`/api/tasks?channel_id=${channelId}&status=all`)
+                    if (!res.ok) return
+                    const data = await res.json()
+                    const task = data.tasks?.find((t: any) => t.task_number === taskNumber)
+                    if (task?.message_id) onOpenThread?.(task.message_id)
+                  } catch {}
+                } : undefined}
               />
             )
           })}

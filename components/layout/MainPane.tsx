@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
-import { MessageSquare, ListTodo, Users } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MessageSquare, ListTodo, Users, FolderGit2 } from 'lucide-react'
+import { useSocket } from '@/lib/socket/useSocket'
 import { ChannelHeader } from '@/components/messages/ChannelHeader'
 import { MessageList } from '@/components/messages/MessageList'
 import { MessageInput } from '@/components/messages/MessageInput'
 import { ThreadPanel } from '@/components/threads/ThreadPanel'
 import { TaskList } from '@/components/tasks/TaskList'
 import { ChannelAgentsPanel } from '@/components/channels/ChannelAgentsPanel'
+import { ProjectList } from '@/components/projects/ProjectList'
 import { cn } from '@/lib/utils'
 import type { Channel } from '@/types'
 
@@ -20,7 +22,17 @@ export function MainPane({
 }) {
   const activeChannel = channels.find((c) => c.id === channelId)
   const [openThreadId, setOpenThreadId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'chat' | 'tasks' | 'agents'>('chat')
+  const [activeTab, setActiveTab] = useState<'chat' | 'tasks' | 'agents' | 'projects'>('chat')
+  const { socket } = useSocket()
+
+  // Join channel room at this level so all tabs receive socket events
+  useEffect(() => {
+    if (!socket || !channelId) return
+    socket.emit('channel:join', channelId)
+    return () => {
+      socket.emit('channel:leave', channelId)
+    }
+  }, [socket, channelId])
 
   const showThread = !!openThreadId
 
@@ -33,6 +45,7 @@ export function MainPane({
     { key: 'chat' as const, label: 'Chat', icon: MessageSquare },
     { key: 'tasks' as const, label: 'Tasks', icon: ListTodo },
     { key: 'agents' as const, label: 'Agents', icon: Users },
+    { key: 'projects' as const, label: 'Projects', icon: FolderGit2 },
   ]
 
   return (
@@ -74,6 +87,8 @@ export function MainPane({
             <TaskList channelId={channelId} onOpenTask={handleOpenTask} />
           ) : activeTab === 'agents' && channelId ? (
             <ChannelAgentsPanel channelId={channelId} />
+          ) : activeTab === 'projects' && channelId ? (
+            <ProjectList channelId={channelId} />
           ) : null}
         </div>
       </div>

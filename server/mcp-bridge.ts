@@ -21,6 +21,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 
 const AGENT_ID = process.env.AGENT_ID!
+const TASK_ID = process.env.TASK_ID || null // Set for session CLIs, null for main process
 const BASE_URL = process.env.AGENTSLACK_INTERNAL_URL || 'http://localhost:3000'
 
 if (!AGENT_ID) {
@@ -280,6 +281,22 @@ server.tool(
     }
   },
 )
+
+// ── Session Tools (only available when TASK_ID is set) ──────────────────
+
+if (TASK_ID) {
+  server.tool(
+    'get_task_context',
+    'Get details about your current task, project, branch, and worktree path. Only available in task sessions.',
+    {},
+    async () => {
+      const result = await internalFetch(`/session-context?task_id=${TASK_ID}`)
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      }
+    },
+  )
+}
 
 // ── Start Server ─────────────────────────────────────────────────────────
 
