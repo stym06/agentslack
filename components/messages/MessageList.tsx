@@ -38,9 +38,11 @@ const formatDateLabel = (dateStr: string) => {
 export function MessageList({
   channelId,
   onOpenThread,
+  onOpenTaskDetail,
 }: {
   channelId: string | null
   onOpenThread?: (messageId: string) => void
+  onOpenTaskDetail?: (taskId: string) => void
 }) {
   const [messages, setMessages] = useState<MessagePayload[]>([])
   const [typingAgents, setTypingAgents] = useState<Map<string, string>>(new Map())
@@ -198,11 +200,17 @@ export function MessageList({
                 isSystem={isSystem}
                 onOpenTaskByNumber={isSystem ? async (taskNumber: number) => {
                   try {
-                    const res = await fetch(`/api/tasks?channel_id=${channelId}&status=all`)
+                    const params = new URLSearchParams({ status: 'all' })
+                    if (channelId) params.set('channel_id', channelId)
+                    const res = await fetch(`/api/tasks?${params}`)
                     if (!res.ok) return
                     const data = await res.json()
                     const task = data.tasks?.find((t: any) => t.task_number === taskNumber)
-                    if (task?.message_id) onOpenThread?.(task.message_id)
+                    if (task?.id && onOpenTaskDetail) {
+                      onOpenTaskDetail(task.id)
+                    } else if (task?.message_id) {
+                      onOpenThread?.(task.message_id)
+                    }
                   } catch {}
                 } : undefined}
               />

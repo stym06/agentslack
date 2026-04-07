@@ -12,9 +12,11 @@ import type { Channel } from '@/types'
 export function MainPane({
   channelId,
   channels,
+  onOpenTaskDetail,
 }: {
   channelId: string | null
   channels: Channel[]
+  onOpenTaskDetail?: (taskId: string) => void
 }) {
   const activeChannel = channels.find((c) => c.id === channelId)
   const { closeAgentProfile } = useAgentProfile()
@@ -44,7 +46,7 @@ export function MainPane({
           {activeChannel && (
             <ChannelHeader channelName={activeChannel.name} channelId={activeChannel.id} />
           )}
-          <MessageList channelId={channelId} onOpenThread={handleOpenThread} />
+          <MessageList channelId={channelId} onOpenThread={handleOpenThread} onOpenTaskDetail={onOpenTaskDetail} />
           <MessageInput channelId={channelId} />
         </div>
       </div>

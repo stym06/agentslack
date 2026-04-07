@@ -104,12 +104,16 @@ function TaskRow({
   task,
   channelId,
   onOpenTask,
+  onOpenTaskThread,
+  onOpenTaskDetail,
   setTasks,
   indent,
 }: {
   task: Task
   channelId?: string
   onOpenTask?: (messageId: string) => void
+  onOpenTaskThread?: (channelId: string, messageId: string) => void
+  onOpenTaskDetail?: (taskId: string) => void
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>
   indent?: boolean
 }) {
@@ -131,7 +135,15 @@ function TaskRow({
         }}
       />
       <span
-        onClick={() => onOpenTask?.(task.message_id)}
+        onClick={() => {
+          if (onOpenTaskDetail) {
+            onOpenTaskDetail(task.id)
+          } else if (onOpenTask) {
+            onOpenTask(task.message_id)
+          } else if (onOpenTaskThread && task.channel_id) {
+            onOpenTaskThread(task.channel_id, task.message_id)
+          }
+        }}
         className="flex-1 cursor-pointer truncate text-sm font-medium hover:underline"
       >
         {task.title}
@@ -169,9 +181,11 @@ function TaskRow({
 interface TaskListProps {
   channelId?: string
   onOpenTask?: (messageId: string) => void
+  onOpenTaskThread?: (channelId: string, messageId: string) => void
+  onOpenTaskDetail?: (taskId: string) => void
 }
 
-export function TaskList({ channelId, onOpenTask }: TaskListProps) {
+export function TaskList({ channelId, onOpenTask, onOpenTaskThread, onOpenTaskDetail }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [groups, setGroups] = useState<TaskGroup[]>([])
   const [filter, setFilter] = useState<string>('all')
@@ -317,7 +331,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                 'cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors',
                 filter === s
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80',
               )}
             >
               {STATUS_LABELS[s]}
@@ -401,7 +415,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                 {expandedGroups.has('__ungrouped') && (
                   <div className="divide-y border-t">
                     {ungrouped.map((task) => (
-                      <TaskRow key={task.id} task={task} channelId={channelId} onOpenTask={onOpenTask} setTasks={setTasks} indent />
+                      <TaskRow key={task.id} task={task} channelId={channelId} onOpenTask={onOpenTask} onOpenTaskThread={onOpenTaskThread} onOpenTaskDetail={onOpenTaskDetail} setTasks={setTasks} indent />
                     ))}
                   </div>
                 )}
@@ -439,7 +453,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
                   {isExpanded && (
                     <div className="divide-y border-t">
                       {group.tasks.map((task) => (
-                        <TaskRow key={task.id} task={task} channelId={channelId} onOpenTask={onOpenTask} setTasks={setTasks} indent />
+                        <TaskRow key={task.id} task={task} channelId={channelId} onOpenTask={onOpenTask} onOpenTaskThread={onOpenTaskThread} onOpenTaskDetail={onOpenTaskDetail} setTasks={setTasks} indent />
                       ))}
                     </div>
                   )}

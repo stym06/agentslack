@@ -5,6 +5,34 @@ import { db } from '@/lib/db'
 import { getIO } from '@/server/socket-server'
 import { enrichTask, emitTaskSystemMessage } from '@/lib/tasks/helpers'
 
+// GET /api/tasks/[taskId] — Get task detail with enrichment
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ taskId: string }> },
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { taskId } = await params
+  const task = await db.task.findUnique({
+    where: { id: taskId },
+    include: { group: true },
+  })
+  if (!task) {
+    return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+  }
+
+  const enriched = await enrichTask(task)
+  const commentCount = await db.message.count({ where: { threadId: task.messageId } })
+  return NextResponse.json({
+    ...enriched,
+    group_summary: task.group?.summary ?? null,
+    comment_count: commentCount,
+  })
+}
+
 // PATCH /api/tasks/[taskId] — Update task status or claim/unclaim
 export async function PATCH(
   req: NextRequest,

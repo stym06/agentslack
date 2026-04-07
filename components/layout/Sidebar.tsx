@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
-import { Hash, ChevronDown, Plus, Bot, LogOut, ListTodo, FolderGit2 } from 'lucide-react'
+import { Hash, ChevronDown, Plus, Bot, LogOut, ListTodo, FolderGit2, Bell } from 'lucide-react'
 import type { Channel, Agent } from '@/types'
+import type { Notification } from './DashboardLayout'
 import { CreateAgentModal } from '@/components/agents/CreateAgentModal'
 import { CreateChannelModal } from '@/components/channels/CreateChannelModal'
 import { useSocket } from '@/lib/socket/useSocket'
@@ -12,7 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { Hint } from '@/components/hint'
 import { cn } from '@/lib/utils'
 
-export type ActiveView = 'channel' | 'tasks' | 'projects'
+export type ActiveView = 'channel' | 'tasks' | 'projects' | 'notifications'
 
 export function Sidebar({
   activeChannelId,
@@ -23,6 +24,7 @@ export function Sidebar({
   channels,
   agents,
   onAgentsChange,
+  notifications,
 }: {
   activeChannelId: string | null
   activeView: ActiveView
@@ -32,6 +34,7 @@ export function Sidebar({
   channels: Channel[]
   agents: Agent[]
   onAgentsChange: (agents: Agent[]) => void
+  notifications: Notification[]
 }) {
   const [showAgentModal, setShowAgentModal] = useState(false)
   const [showChannelModal, setShowChannelModal] = useState(false)
@@ -96,6 +99,28 @@ export function Sidebar({
         {/* Global views */}
         {navItem('tasks', 'Tasks', ListTodo)}
         {navItem('projects', 'Projects', FolderGit2)}
+
+        {/* Notifications */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onViewSelect('notifications')}
+          className={cn(
+            'flex h-7 w-full items-center justify-start gap-1.5 px-[18px] text-sm font-normal text-sidebar-foreground',
+            activeView === 'notifications' && 'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent',
+          )}
+        >
+          <Bell className="size-3.5 shrink-0" />
+          <span>Notifications</span>
+          {(() => {
+            const unread = notifications.filter((n) => !n.read).length
+            return unread > 0 ? (
+              <span className="ml-auto flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            ) : null
+          })()}
+        </Button>
 
         {/* Channels section */}
         <div className="mt-3">
