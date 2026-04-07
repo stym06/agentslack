@@ -40,10 +40,10 @@ type AgentProfile = {
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; color: string; dot: string }> = {
-    online: { label: 'Online', color: 'bg-green-500/10 text-green-700', dot: 'bg-green-500' },
-    busy: { label: 'Busy', color: 'bg-yellow-500/10 text-yellow-700', dot: 'bg-yellow-500' },
-    loading: { label: 'Starting', color: 'bg-blue-500/10 text-blue-700', dot: 'bg-blue-500 animate-pulse' },
-    offline: { label: 'Offline', color: 'bg-gray-500/10 text-gray-500', dot: 'bg-gray-400' },
+    online: { label: 'Online', color: 'bg-green-500/15 text-green-400', dot: 'bg-green-500' },
+    busy: { label: 'Busy', color: 'bg-yellow-500/15 text-yellow-400', dot: 'bg-yellow-500' },
+    loading: { label: 'Starting', color: 'bg-blue-500/15 text-blue-400', dot: 'bg-blue-500 animate-pulse' },
+    offline: { label: 'Offline', color: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground' },
   }
   const c = config[status] || config.offline
 
@@ -234,18 +234,18 @@ export function AgentProfilePanel({
   }, [socket, agent, agentId])
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-card">
       {/* Header */}
       <div className="flex h-[49px] items-center justify-between border-b px-4">
         <h2 className="text-sm font-bold">Profile</h2>
-        <Button variant="ghost" size="iconSm" onClick={onClose}>
+        <Button variant="ghost" size="icon-sm" onClick={onClose}>
           <X className="size-4" />
         </Button>
       </div>
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
-          <div className="size-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+          <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
         </div>
       ) : !agent ? (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
@@ -255,8 +255,8 @@ export function AgentProfilePanel({
         <div className="flex-1 overflow-y-auto">
           {/* Agent identity */}
           <div className="flex flex-col items-center px-6 pt-6 pb-4">
-            <div className="flex size-[72px] items-center justify-center rounded-lg bg-[#5E2C5F]/10">
-              <Bot className="size-8 text-[#5E2C5F]" />
+            <div className="flex size-[72px] items-center justify-center rounded-lg bg-primary/10">
+              <Bot className="size-8 text-primary" />
             </div>
             <h3 className="mt-3 text-lg font-bold">{agent.name}</h3>
             {agent.role && (
@@ -284,7 +284,7 @@ export function AgentProfilePanel({
                   <span className="text-muted-foreground">Process:</span>
                   <span className={cn(
                     'font-medium',
-                    agent.process.running ? 'text-green-600' : 'text-gray-400',
+                    agent.process.running ? 'text-green-400' : 'text-muted-foreground',
                   )}>
                     {agent.process.running ? 'Running' : 'Stopped'}
                   </span>
@@ -294,7 +294,7 @@ export function AgentProfilePanel({
                   <span className="text-muted-foreground">Ready:</span>
                   <span className={cn(
                     'font-medium',
-                    agent.process.ready ? 'text-green-600' : 'text-yellow-600',
+                    agent.process.ready ? 'text-green-400' : 'text-yellow-400',
                   )}>
                     {agent.process.ready ? 'Yes' : 'No'}
                   </span>

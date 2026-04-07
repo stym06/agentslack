@@ -65,7 +65,7 @@ export function MentionDropdown({
 
   if (agents.length === 0) {
     return (
-      <div className="absolute bottom-full z-50 mb-1 w-80 overflow-hidden rounded-lg border bg-white shadow-xl">
+      <div className="absolute bottom-full z-50 mb-1 w-80 overflow-hidden rounded-lg border bg-card shadow-xl">
         <div className="border-b px-3 py-2">
           <span className="text-xs text-muted-foreground">
             No agents in this channel. Add agents via the channel header.
@@ -78,17 +78,17 @@ export function MentionDropdown({
   if (filtered.length === 0) return null
 
   return (
-    <div className="absolute bottom-full z-50 mb-1 w-80 overflow-hidden rounded-lg border bg-white shadow-xl">
+    <div className="absolute bottom-full z-50 mb-1 w-80 overflow-hidden rounded-lg border bg-card shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-1.5">
+      <div className="flex items-center justify-between border-b bg-muted px-3 py-1.5">
         <span className="text-xs text-muted-foreground">
           Agents matching &quot;@{query}&quot;
         </span>
         <span className="text-[10px] text-muted-foreground">
-          <kbd className="rounded border bg-white px-1 py-0.5 text-[10px]">↑</kbd>{' '}
-          <kbd className="rounded border bg-white px-1 py-0.5 text-[10px]">↓</kbd> to navigate{' '}
-          <kbd className="rounded border bg-white px-1 py-0.5 text-[10px]">↵</kbd> to select{' '}
-          <kbd className="rounded border bg-white px-1 py-0.5 text-[10px]">esc</kbd> to dismiss
+          <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[10px]">↑</kbd>{' '}
+          <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[10px]">↓</kbd> to navigate{' '}
+          <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[10px]">↵</kbd> to select{' '}
+          <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[10px]">esc</kbd> to dismiss
         </span>
       </div>
 
@@ -97,8 +97,8 @@ export function MentionDropdown({
         <button
           key={agent.id}
           className={cn(
-            'flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-sky-50',
-            i === selectedIndex && 'bg-sky-600 text-white hover:bg-sky-600',
+            'flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-accent',
+            i === selectedIndex && 'bg-primary text-primary-foreground hover:bg-primary',
           )}
           onMouseDown={(e) => {
             e.preventDefault()
@@ -110,14 +110,14 @@ export function MentionDropdown({
             <Avatar className="size-8 shrink-0 rounded-lg">
               <AvatarFallback className={cn(
                 'rounded-lg text-xs',
-                i === selectedIndex ? 'bg-sky-700 text-white' : 'bg-sky-500 text-white',
+                i === selectedIndex ? 'bg-primary text-primary-foreground' : 'bg-primary/80 text-primary-foreground',
               )}>
                 {agent.name[0]}
               </AvatarFallback>
             </Avatar>
             <Bot className={cn(
-              'absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-white',
-              i === selectedIndex ? 'text-sky-200' : 'text-sky-600',
+              'absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-card',
+              i === selectedIndex ? 'text-primary-foreground/70' : 'text-primary',
             )} />
           </div>
           <div className="min-w-0 flex-1">
@@ -131,7 +131,7 @@ export function MentionDropdown({
               {agent.role && (
                 <span className={cn(
                   'truncate text-xs',
-                  i === selectedIndex ? 'text-sky-100' : 'text-muted-foreground',
+                  i === selectedIndex ? 'text-primary-foreground/80' : 'text-muted-foreground',
                 )}>
                   {agent.role}
                 </span>
@@ -139,7 +139,7 @@ export function MentionDropdown({
             </div>
           </div>
           {i === selectedIndex && (
-            <span className="text-xs text-sky-200">●</span>
+            <span className="text-xs text-primary-foreground/70">●</span>
           )}
         </button>
       ))}

@@ -121,8 +121,8 @@ export function ManageAgentsModal({
                   className="flex items-center gap-3 rounded-md px-3 py-2.5"
                 >
                   {/* Agent icon */}
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[#5E2C5F]/10">
-                    <Bot className="size-4 text-[#5E2C5F]" />
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                    <Bot className="size-4 text-primary" />
                   </div>
 
                   {/* Agent info */}

@@ -42,7 +42,7 @@ export function TypingText({
   return (
     <>
       {text.slice(0, displayedLength)}
-      <span className="inline-block w-0.5 h-4 bg-gray-400 animate-pulse ml-0.5 align-text-bottom" />
+      <span className="inline-block w-0.5 h-4 bg-muted-foreground animate-pulse ml-0.5 align-text-bottom" />
     </>
   )
 }

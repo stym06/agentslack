@@ -16,10 +16,10 @@ const STATUS_LABELS: Record<string, string> = {
   done: 'Done',
 }
 const STATUS_COLORS: Record<string, string> = {
-  todo: 'bg-gray-100 text-gray-700',
-  in_progress: 'bg-blue-100 text-blue-700',
-  in_review: 'bg-yellow-100 text-yellow-700',
-  done: 'bg-green-100 text-green-700',
+  todo: 'bg-muted text-muted-foreground',
+  in_progress: 'bg-blue-500/15 text-blue-400',
+  in_review: 'bg-yellow-500/15 text-yellow-400',
+  done: 'bg-green-500/15 text-green-400',
 }
 
 function StatusDropdown({
@@ -59,7 +59,7 @@ function StatusDropdown({
         }}
         className={cn(
           'flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors hover:ring-1 hover:ring-ring',
-          STATUS_COLORS[status] || 'bg-gray-100 text-gray-700',
+          STATUS_COLORS[status] || 'bg-muted text-muted-foreground',
         )}
       >
         {STATUS_LABELS[status] || status}
@@ -84,7 +84,7 @@ function StatusDropdown({
                 <span
                   className={cn(
                     'inline-block h-2 w-2 rounded-full',
-                    s === 'todo' && 'bg-gray-400',
+                    s === 'todo' && 'bg-muted-foreground',
                     s === 'in_progress' && 'bg-blue-500',
                     s === 'in_review' && 'bg-yellow-500',
                     s === 'done' && 'bg-green-500',

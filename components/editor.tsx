@@ -167,7 +167,7 @@ const Editor = ({
 
       <div
         className={cn(
-          'flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition focus-within:border-slate-300 focus-within:shadow-sm',
+          'flex flex-col overflow-hidden rounded-md border border-border bg-card transition focus-within:border-ring focus-within:shadow-sm',
           disabled && 'opacity-50',
         )}
       >
@@ -199,13 +199,13 @@ const Editor = ({
 
         <div className="z-[5] flex px-2 pb-2">
           <Hint label={isToolbarVisible ? 'Hide formatting' : 'Show formatting'}>
-            <Button disabled={disabled} size="iconSm" variant="ghost" onClick={toggleToolbar}>
+            <Button disabled={disabled} size="icon-sm" variant="ghost" onClick={toggleToolbar}>
               <PiTextAa className="size-4" />
             </Button>
           </Hint>
 
           <EmojiPopover onEmojiSelect={onEmojiSelect}>
-            <Button disabled={disabled} size="iconSm" variant="ghost">
+            <Button disabled={disabled} size="icon-sm" variant="ghost">
               <Smile className="size-4" />
             </Button>
           </EmojiPopover>
@@ -214,7 +214,7 @@ const Editor = ({
             <Hint label="Image">
               <Button
                 disabled={disabled}
-                size="iconSm"
+                size="icon-sm"
                 variant="ghost"
                 onClick={() => imageElementRef.current?.click()}
               >
@@ -237,7 +237,7 @@ const Editor = ({
                   onSubmit({ body: JSON.stringify(quillRef.current.getContents()), image })
                 }}
                 size="sm"
-                className="bg-[#007a5a] text-white hover:bg-[#007a5a]/80"
+                className="bg-primary text-white hover:bg-primary/80"
               >
                 Save
               </Button>
@@ -255,10 +255,10 @@ const Editor = ({
               className={cn(
                 'ml-auto',
                 isEmpty
-                  ? 'bg-white text-muted-foreground hover:bg-white/80'
-                  : 'bg-[#007a5a] text-white hover:bg-[#007a5a]/80',
+                  ? 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  : 'bg-primary text-white hover:bg-primary/80',
               )}
-              size="iconSm"
+              size="icon-sm"
             >
               <MdSend className="size-4" />
             </Button>

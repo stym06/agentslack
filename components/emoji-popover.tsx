@@ -1,10 +1,10 @@
 'use client'
 
 import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react'
-import { type PropsWithChildren, useState } from 'react'
+import { type PropsWithChildren, useState, useRef, useCallback } from 'react'
 
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
+import { Tooltip, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 
 interface EmojiPopoverProps {
   hint?: string
@@ -18,28 +18,38 @@ export const EmojiPopover = ({
 }: PropsWithChildren<EmojiPopoverProps>) => {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [tooltipOpen, setTooltipOpen] = useState(false)
+  const anchorRef = useRef<HTMLDivElement>(null)
 
-  const onSelect = (emojiData: EmojiClickData) => {
+  const onSelect = useCallback((emojiData: EmojiClickData) => {
     onEmojiSelect(emojiData.emoji)
     setPopoverOpen(false)
-    setTimeout(() => setTooltipOpen(false), 500)
-  }
+    setTooltipOpen(false)
+  }, [onEmojiSelect])
 
   return (
-    <TooltipProvider>
-      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-        <Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen} delayDuration={50}>
-          <PopoverTrigger asChild>
-            <TooltipTrigger asChild>{children}</TooltipTrigger>
-          </PopoverTrigger>
-          <TooltipContent className="border border-white/5 bg-black text-white">
-            <p className="text-xs font-medium">{hint}</p>
-          </TooltipContent>
-        </Tooltip>
-        <PopoverContent className="w-full border-none p-0 shadow-none">
-          <EmojiPicker onEmojiClick={onSelect} />
-        </PopoverContent>
-      </Popover>
+    <TooltipProvider delay={50}>
+      <Tooltip open={tooltipOpen && !popoverOpen} onOpenChange={setTooltipOpen}>
+        <PopoverPrimitive.Root open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <div
+            ref={anchorRef}
+            onClick={() => setPopoverOpen((v) => !v)}
+            onMouseEnter={() => setTooltipOpen(true)}
+            onMouseLeave={() => setTooltipOpen(false)}
+          >
+            {children}
+          </div>
+          <PopoverPrimitive.Portal>
+            <PopoverPrimitive.Positioner anchor={anchorRef} side="top" sideOffset={4} className="isolate z-50">
+              <PopoverPrimitive.Popup className="w-full border-none p-0 shadow-none">
+                <EmojiPicker onEmojiClick={onSelect} />
+              </PopoverPrimitive.Popup>
+            </PopoverPrimitive.Positioner>
+          </PopoverPrimitive.Portal>
+        </PopoverPrimitive.Root>
+        <TooltipContent>
+          <p className="text-xs font-medium">{hint}</p>
+        </TooltipContent>
+      </Tooltip>
     </TooltipProvider>
   )
 }

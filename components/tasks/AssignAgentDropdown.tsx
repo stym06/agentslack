@@ -141,8 +141,8 @@ export function AssignAgentDropdown({
                           'h-2 w-2 rounded-full',
                           agent.status === 'online' && 'bg-green-500',
                           agent.status === 'busy' && 'bg-yellow-500',
-                          agent.status === 'offline' && 'bg-gray-400',
-                          agent.status === 'loading' && 'bg-blue-400',
+                          agent.status === 'offline' && 'bg-muted-foreground',
+                          agent.status === 'loading' && 'bg-blue-500',
                         )}
                       />
                       <span className="truncate">@{agent.name}</span>

@@ -41,6 +41,7 @@ export function DashboardLayout() {
   const profileContext = useMemo(() => ({
     openAgentProfile: (agentId: string) => setSelectedAgentId(agentId),
     openAgentProfileByName,
+    closeAgentProfile: () => setSelectedAgentId(null),
   }), [openAgentProfileByName])
 
   return (

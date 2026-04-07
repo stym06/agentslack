@@ -40,7 +40,7 @@ export function ProjectPicker({ channelId, selectedProject, onSelect }: ProjectP
     <div className="relative">
       <Hint label="Attach project">
         <Button
-          size="iconSm"
+          size="icon-sm"
           variant="ghost"
           onClick={() => setOpen(!open)}
           className={cn(selectedProject && 'text-primary')}

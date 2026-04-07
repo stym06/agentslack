@@ -12,11 +12,11 @@ interface HintProps {
 
 export const Hint = ({ label, children, side, align }: PropsWithChildren<HintProps>) => {
   return (
-    <TooltipProvider>
-      <Tooltip delayDuration={50}>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
+    <TooltipProvider delay={50}>
+      <Tooltip>
+        <TooltipTrigger render={<span />}>{children}</TooltipTrigger>
 
-        <TooltipContent side={side} align={align} className="border border-white/5 bg-black text-white">
+        <TooltipContent side={side} align={align}>
           <p className="text-xs font-medium">{label}</p>
         </TooltipContent>
       </Tooltip>

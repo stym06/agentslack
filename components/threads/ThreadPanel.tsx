@@ -37,11 +37,18 @@ export function ThreadPanel({
   const [editorKey, setEditorKey] = useState(0)
   const [isPending, setIsPending] = useState(false)
   const { socket, isConnected } = useSocket()
-  const repliesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const socketMsgIds = useRef(new Set<string>())
+  const hasScrolledInitial = useRef(false)
 
-  const scrollToBottom = useCallback(() => {
-    repliesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToBottom = useCallback((instant?: boolean) => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    if (instant) {
+      el.scrollTop = el.scrollHeight
+    } else {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    }
   }, [])
 
   useEffect(() => {
@@ -53,6 +60,7 @@ export function ThreadPanel({
 
   useEffect(() => {
     socketMsgIds.current.clear()
+    hasScrolledInitial.current = false
     setRoutingAgent(null)
     fetch(`/api/messages?thread_id=${threadId}`)
       .then(async (res) => {
@@ -101,7 +109,14 @@ export function ThreadPanel({
   }, [threadId, isConnected, socket])
 
   useEffect(() => {
-    scrollToBottom()
+    if (replies.length === 0) return
+    if (!hasScrolledInitial.current) {
+      hasScrolledInitial.current = true
+      // Use rAF to ensure DOM has rendered before scrolling
+      requestAnimationFrame(() => scrollToBottom(true))
+    } else {
+      scrollToBottom()
+    }
   }, [replies, routingAgent, scrollToBottom])
 
   const handleSubmit = useCallback(async (plainText: string) => {
@@ -128,7 +143,7 @@ export function ThreadPanel({
     <div className="flex h-full flex-col">
       <div className="flex h-[49px] items-center justify-between border-b px-4">
         <p className="text-lg font-bold">Thread</p>
-        <Button onClick={onClose} size="iconSm" variant="ghost">
+        <Button onClick={onClose} size="icon-sm" variant="ghost">
           <XIcon className="size-5 stroke-[1.5]" />
         </Button>
       </div>
@@ -159,7 +174,7 @@ export function ThreadPanel({
       )}
 
       {/* Replies */}
-      <div className="messages-scrollbar flex flex-1 flex-col overflow-y-auto pb-4">
+      <div ref={scrollContainerRef} className="messages-scrollbar flex flex-1 flex-col overflow-y-auto pb-4">
         {replies.map((reply) => (
           <Message
             key={reply.id}
@@ -187,7 +202,7 @@ export function ThreadPanel({
           </div>
         )}
 
-        <div ref={repliesEndRef} />
+        <div />
       </div>
 
       {/* Reply editor */}

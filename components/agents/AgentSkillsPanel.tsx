@@ -120,7 +120,7 @@ export function AgentSkillsPanel({ agentId }: { agentId: string }) {
                   )}
                 </div>
               </div>
-              <Button size="iconSm" variant="ghost" onClick={() => handleView(skill)} className="size-7 shrink-0">
+              <Button size="icon-sm" variant="ghost" onClick={() => handleView(skill)} className="size-7 shrink-0">
                 <FileText className="size-3" />
               </Button>
             </div>
@@ -154,10 +154,10 @@ export function AgentSkillsPanel({ agentId }: { agentId: string }) {
             <div className="flex items-center justify-between rounded-md border px-3 py-2">
               <span className="text-sm">{skill.name}</span>
               <div className="flex gap-1">
-                <Button size="iconSm" variant="ghost" onClick={() => handleView(skill)} className="size-7">
+                <Button size="icon-sm" variant="ghost" onClick={() => handleView(skill)} className="size-7">
                   <Pencil className="size-3" />
                 </Button>
-                <Button size="iconSm" variant="ghost" onClick={() => handleDelete(skill.filename)} className="size-7 text-destructive hover:text-destructive">
+                <Button size="icon-sm" variant="ghost" onClick={() => handleDelete(skill.filename)} className="size-7 text-destructive hover:text-destructive">
                   <Trash2 className="size-3" />
                 </Button>
               </div>

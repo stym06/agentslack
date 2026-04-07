@@ -47,10 +47,10 @@ interface MessageProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  todo: 'bg-gray-100 text-gray-700',
-  in_progress: 'bg-blue-100 text-blue-700',
-  in_review: 'bg-yellow-100 text-yellow-700',
-  done: 'bg-green-100 text-green-700',
+  todo: 'bg-muted text-muted-foreground',
+  in_progress: 'bg-blue-500/15 text-blue-400',
+  in_review: 'bg-yellow-500/15 text-yellow-400',
+  done: 'bg-green-500/15 text-green-400',
 }
 
 const formatFullTime = (date: Date) => {
@@ -120,7 +120,7 @@ export const Message = ({
 
   if (isCompact) {
     return (
-      <div className="group relative flex flex-col gap-2 p-1.5 px-5 hover:bg-gray-100/60">
+      <div className="group relative flex flex-col gap-2 p-1.5 px-5 hover:bg-muted/60">
         <div className="flex items-start gap-2">
           <Hint label={formatFullTime(dateObj)}>
             <button className="w-[40px] cursor-pointer text-center text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
@@ -135,7 +135,7 @@ export const Message = ({
                 <span
                   className={cn(
                     'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                    STATUS_COLORS[task.status] || 'bg-gray-100 text-gray-700',
+                    STATUS_COLORS[task.status] || 'bg-muted text-muted-foreground',
                   )}
                 >
                   {task.status.replace('_', ' ')}
@@ -169,7 +169,7 @@ export const Message = ({
   }
 
   return (
-    <div className="group relative flex flex-col gap-2 p-1.5 px-5 hover:bg-gray-100/60">
+    <div className="group relative flex flex-col gap-2 p-1.5 px-5 hover:bg-muted/60">
       <div className="flex items-start gap-2">
         <Avatar className="size-9 shrink-0">
           <AvatarImage alt={authorName} src={authorImage ?? undefined} />
@@ -193,7 +193,7 @@ export const Message = ({
               <span
                 className={cn(
                   'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                  STATUS_COLORS[task.status] || 'bg-gray-100 text-gray-700',
+                  STATUS_COLORS[task.status] || 'bg-muted text-muted-foreground',
                 )}
               >
                 {task.status.replace('_', ' ')}

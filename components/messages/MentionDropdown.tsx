@@ -64,28 +64,28 @@ export function MentionDropdown({
   return (
     <div
       ref={listRef}
-      className="absolute bottom-full left-0 mb-1 w-64 bg-gray-700 border border-gray-600 rounded-lg shadow-lg overflow-hidden z-10"
+      className="absolute bottom-full left-0 mb-1 w-64 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-10"
     >
       {filtered.map((agent, i) => (
         <button
           key={agent.id}
-          className={`w-full cursor-pointer px-3 py-2 flex items-center gap-2 text-left hover:bg-gray-600 ${
-            i === selectedIndex ? 'bg-gray-600' : ''
+          className={`w-full cursor-pointer px-3 py-2 flex items-center gap-2 text-left hover:bg-accent ${
+            i === selectedIndex ? 'bg-accent' : ''
           }`}
           onMouseDown={(e) => {
             e.preventDefault()
             onSelect(agent.name)
           }}
         >
-          <div className="w-7 h-7 rounded bg-gray-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+          <div className="w-7 h-7 rounded bg-primary/80 flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
             {agent.name[0]}
           </div>
           <div className="min-w-0">
-            <div className="text-sm text-white font-medium truncate">
+            <div className="text-sm text-foreground font-medium truncate">
               {agent.name}
             </div>
             {agent.role && (
-              <div className="text-xs text-gray-400 truncate">{agent.role}</div>
+              <div className="text-xs text-muted-foreground truncate">{agent.role}</div>
             )}
           </div>
         </button>

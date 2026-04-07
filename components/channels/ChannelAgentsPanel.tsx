@@ -94,9 +94,9 @@ export function ChannelAgentsPanel({ channelId }: { channelId: string }) {
               <div key={agent.id} className="flex items-center gap-3 px-4 py-3">
                 <button
                   onClick={() => openAgentProfile(agent.id)}
-                  className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[#5E2C5F]/10 hover:bg-[#5E2C5F]/20 transition-colors"
+                  className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
                 >
-                  <Bot className="size-4 text-[#5E2C5F]" />
+                  <Bot className="size-4 text-primary" />
                 </button>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export function ChannelAgentsPanel({ channelId }: { channelId: string }) {
                       agent.status === 'online' && 'bg-green-500',
                       agent.status === 'busy' && 'bg-yellow-500',
                       agent.status === 'loading' && 'bg-blue-500 animate-pulse',
-                      agent.status === 'offline' && 'bg-gray-400',
+                      agent.status === 'offline' && 'bg-muted-foreground',
                     )} />
                   </div>
                   {agent.role && <p className="truncate text-xs text-muted-foreground">{agent.role}</p>}
@@ -147,9 +147,9 @@ export function ChannelAgentsPanel({ channelId }: { channelId: string }) {
                 <div key={agent.id} className="flex items-center gap-3 px-4 py-3">
                   <button
                     onClick={() => openAgentProfile(agent.id)}
-                    className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[#5E2C5F]/10 hover:bg-[#5E2C5F]/20 transition-colors"
+                    className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
                   >
-                    <Bot className="size-4 text-[#5E2C5F]" />
+                    <Bot className="size-4 text-primary" />
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export function ChannelAgentsPanel({ channelId }: { channelId: string }) {
                         agent.status === 'online' && 'bg-green-500',
                         agent.status === 'busy' && 'bg-yellow-500',
                         agent.status === 'loading' && 'bg-blue-500 animate-pulse',
-                        agent.status === 'offline' && 'bg-gray-400',
+                        agent.status === 'offline' && 'bg-muted-foreground',
                       )} />
                     </div>
                     {agent.role && <p className="truncate text-xs text-muted-foreground">{agent.role}</p>}

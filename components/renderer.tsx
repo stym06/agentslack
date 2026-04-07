@@ -147,7 +147,7 @@ function inlineFormat(text: string): string {
   // Inline code
   result = result.replace(
     /`([^`]+)`/g,
-    '<code class="rounded border border-border bg-muted px-1 py-0.5 font-mono text-xs text-[#e01e5a]">$1</code>',
+    '<code class="rounded border border-border bg-muted px-1 py-0.5 font-mono text-xs text-primary">$1</code>',
   )
   // Bold
   result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -158,12 +158,12 @@ function inlineFormat(text: string): string {
   // Links [text](url)
   result = result.replace(
     /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#1264a3] hover:underline cursor-pointer">$1</a>',
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline cursor-pointer">$1</a>',
   )
   // Bare URLs
   result = result.replace(
     /(?<!")(?<!=)(https?:\/\/[^\s<]+)/g,
-    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#1264a3] hover:underline cursor-pointer">$1</a>',
+    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline cursor-pointer">$1</a>',
   )
   // @mentions — clickable to open agent profile
   result = result.replace(/@(\w+)/g, '<span class="mention-highlight cursor-pointer" data-mention="$1">@$1</span>')

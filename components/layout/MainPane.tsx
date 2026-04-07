@@ -11,6 +11,7 @@ import { TaskList } from '@/components/tasks/TaskList'
 import { ChannelAgentsPanel } from '@/components/channels/ChannelAgentsPanel'
 import { ProjectList } from '@/components/projects/ProjectList'
 import { cn } from '@/lib/utils'
+import { useAgentProfile } from '@/components/agents/AgentProfileContext'
 import type { Channel } from '@/types'
 
 export function MainPane({
@@ -21,6 +22,7 @@ export function MainPane({
   channels: Channel[]
 }) {
   const activeChannel = channels.find((c) => c.id === channelId)
+  const { closeAgentProfile } = useAgentProfile()
   const [openThreadId, setOpenThreadId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'chat' | 'tasks' | 'agents' | 'projects'>('chat')
   const { socket } = useSocket()
@@ -36,9 +38,14 @@ export function MainPane({
 
   const showThread = !!openThreadId
 
+  const handleOpenThread = (threadId: string) => {
+    setOpenThreadId(threadId)
+    closeAgentProfile()
+  }
+
   const handleOpenTask = (messageId: string) => {
     setActiveTab('tasks')
-    setOpenThreadId(messageId)
+    handleOpenThread(messageId)
   }
 
   const tabs = [
@@ -80,7 +87,7 @@ export function MainPane({
           {/* Content */}
           {activeTab === 'chat' ? (
             <>
-              <MessageList channelId={channelId} onOpenThread={setOpenThreadId} />
+              <MessageList channelId={channelId} onOpenThread={handleOpenThread} />
               <MessageInput channelId={channelId} />
             </>
           ) : activeTab === 'tasks' && channelId ? (
