@@ -97,7 +97,7 @@ export function MentionDropdown({
         <button
           key={agent.id}
           className={cn(
-            'flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-sky-50',
+            'flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-sky-50',
             i === selectedIndex && 'bg-sky-600 text-white hover:bg-sky-600',
           )}
           onMouseDown={(e) => {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useAgentProfile } from '@/components/agents/AgentProfileContext'
 
 interface RendererProps {
   value: string
@@ -164,14 +165,15 @@ function inlineFormat(text: string): string {
     /(?<!")(?<!=)(https?:\/\/[^\s<]+)/g,
     '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#1264a3] hover:underline cursor-pointer">$1</a>',
   )
-  // @mentions
-  result = result.replace(/@(\w+)/g, '<span class="mention-highlight">@$1</span>')
+  // @mentions — clickable to open agent profile
+  result = result.replace(/@(\w+)/g, '<span class="mention-highlight cursor-pointer" data-mention="$1">@$1</span>')
   return result
 }
 
 const Renderer = ({ value }: RendererProps) => {
   const [isEmpty, setIsEmpty] = useState(false)
   const rendererRef = useRef<HTMLDivElement>(null)
+  const { openAgentProfileByName } = useAgentProfile()
 
   useEffect(() => {
     if (!rendererRef.current) return
@@ -202,6 +204,24 @@ const Renderer = ({ value }: RendererProps) => {
       if (container) container.innerHTML = ''
     }
   }, [value])
+
+  // Handle clicks on @mentions via event delegation
+  useEffect(() => {
+    const container = rendererRef.current
+    if (!container) return
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const mention = target.closest('[data-mention]') as HTMLElement | null
+      if (mention) {
+        const name = mention.dataset.mention
+        if (name) openAgentProfileByName(name)
+      }
+    }
+
+    container.addEventListener('click', handleClick)
+    return () => container.removeEventListener('click', handleClick)
+  }, [openAgentProfileByName])
 
   if (isEmpty) return null
 

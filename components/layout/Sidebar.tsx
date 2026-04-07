@@ -15,13 +15,18 @@ import { cn } from '@/lib/utils'
 export function Sidebar({
   activeChannelId,
   onChannelSelect,
+  onAgentSelect,
   channels,
+  agents,
+  onAgentsChange,
 }: {
   activeChannelId: string | null
   onChannelSelect: (id: string) => void
+  onAgentSelect: (agentId: string) => void
   channels: Channel[]
+  agents: Agent[]
+  onAgentsChange: (agents: Agent[]) => void
 }) {
-  const [agents, setAgents] = useState<Agent[]>([])
   const [showAgentModal, setShowAgentModal] = useState(false)
   const [showChannelModal, setShowChannelModal] = useState(false)
   const [channelsOpen, setChannelsOpen] = useState(true)
@@ -29,17 +34,10 @@ export function Sidebar({
   const { socket } = useSocket()
 
   useEffect(() => {
-    fetch('/api/agents')
-      .then((res) => res.ok ? res.json() : [])
-      .then((data) => setAgents(Array.isArray(data) ? data : []))
-      .catch(() => setAgents([]))
-  }, [])
-
-  useEffect(() => {
     if (!socket) return
     const handleStatus = (data: { agent_id: string; status: string }) => {
-      setAgents((prev) =>
-        prev.map((a) =>
+      onAgentsChange(
+        agents.map((a) =>
           a.id === data.agent_id ? { ...a, status: data.status as Agent['status'] } : a,
         ),
       )
@@ -48,7 +46,7 @@ export function Sidebar({
     return () => {
       socket.off('agent:status', handleStatus)
     }
-  }, [socket])
+  }, [socket, agents, onAgentsChange])
 
   function statusDot(status: string) {
     switch (status) {
@@ -142,9 +140,10 @@ export function Sidebar({
             agents
               .filter((agent) => agent.status !== 'offline')
               .map((agent) => (
-                <div
+                <button
                   key={agent.id}
-                  className="flex h-7 items-center gap-1.5 px-[18px] text-sm text-[#F9EDFFCC]"
+                  onClick={() => onAgentSelect(agent.id)}
+                  className="flex h-7 w-full items-center gap-1.5 px-[18px] text-sm text-[#F9EDFFCC] hover:bg-white/10 rounded cursor-pointer transition-colors"
                 >
                   <span className={cn('size-2 shrink-0 rounded-full', statusDot(agent.status))} />
                   <Bot className="size-3.5 shrink-0 opacity-70" />
@@ -154,7 +153,7 @@ export function Sidebar({
                   {agent.status === 'loading' && (
                     <span className="ml-auto text-[10px] opacity-50">Starting...</span>
                   )}
-                </div>
+                </button>
               ))}
         </div>
       </div>

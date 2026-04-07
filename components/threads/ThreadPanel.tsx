@@ -138,6 +138,8 @@ export function ThreadPanel({
         <>
           <Message
             id={parentMessage.id}
+            senderType={parentMessage.senderType}
+            senderId={parentMessage.senderId}
             authorName={parentMessage.sender_name}
             authorImage={parentMessage.sender_avatar}
             body={parentMessage.content}
@@ -162,6 +164,8 @@ export function ThreadPanel({
           <Message
             key={reply.id}
             id={reply.id}
+            senderType={reply.senderType}
+            senderId={reply.senderId}
             authorName={reply.sender_name}
             authorImage={reply.sender_avatar}
             body={reply.content}

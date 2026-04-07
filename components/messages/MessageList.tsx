@@ -158,6 +158,8 @@ export function MessageList({
               <Message
                 key={msg.id}
                 id={msg.id}
+                senderType={msg.senderType}
+                senderId={msg.senderId}
                 authorName={msg.sender_name}
                 authorImage={msg.sender_avatar}
                 body={msg.content}

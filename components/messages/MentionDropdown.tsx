@@ -69,7 +69,7 @@ export function MentionDropdown({
       {filtered.map((agent, i) => (
         <button
           key={agent.id}
-          className={`w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-gray-600 ${
+          className={`w-full cursor-pointer px-3 py-2 flex items-center gap-2 text-left hover:bg-gray-600 ${
             i === selectedIndex ? 'bg-gray-600' : ''
           }`}
           onMouseDown={(e) => {

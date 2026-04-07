@@ -267,7 +267,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
               key={s}
               onClick={() => setFilter(s)}
               className={cn(
-                'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                'cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors',
                 filter === s
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
@@ -280,7 +280,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
         <div className="ml-auto">
           <button
             onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-3.5 w-3.5" />
             New Task
@@ -306,13 +306,13 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
           <button
             onClick={handleCreate}
             disabled={creating || !newTitle.trim()}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {creating ? 'Creating...' : 'Create'}
           </button>
           <button
             onClick={() => setShowCreate(false)}
-            className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-secondary"
+            className="cursor-pointer rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-secondary"
           >
             Cancel
           </button>

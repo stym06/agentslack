@@ -6,6 +6,7 @@ import { Loader } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import { useAgentProfile } from '@/components/agents/AgentProfileContext'
 
 import { Hint } from './hint'
 import { ThreadBar } from './thread-bar'
@@ -22,6 +23,8 @@ const Renderer = dynamic(() => import('./renderer'), {
 
 interface MessageProps {
   id: string
+  senderType?: string
+  senderId?: string
   authorName?: string
   authorImage?: string | null
   body: string
@@ -55,6 +58,8 @@ const formatFullTime = (date: Date) => {
 
 export const Message = ({
   id,
+  senderType,
+  senderId,
   body,
   createdAt,
   authorName = 'Member',
@@ -71,6 +76,13 @@ export const Message = ({
 }: MessageProps) => {
   const avatarFallback = authorName.charAt(0).toUpperCase()
   const dateObj = new Date(createdAt)
+  const { openAgentProfile } = useAgentProfile()
+
+  const handleAuthorClick = () => {
+    if (senderType === 'agent' && senderId) {
+      openAgentProfile(senderId)
+    }
+  }
 
   // System messages (task events) render as centered muted text
   if (isSystem) {
@@ -86,7 +98,7 @@ export const Message = ({
       <div className="group relative flex flex-col gap-2 p-1.5 px-5 hover:bg-gray-100/60">
         <div className="flex items-start gap-2">
           <Hint label={formatFullTime(dateObj)}>
-            <button className="w-[40px] text-center text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
+            <button className="w-[40px] cursor-pointer text-center text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
               {format(dateObj, 'hh:mm')}
             </button>
           </Hint>
@@ -141,10 +153,10 @@ export const Message = ({
 
         <div className="flex w-full flex-col overflow-hidden">
           <div className="text-sm">
-            <button className="cursor-pointer font-bold text-primary hover:underline">{authorName}</button>
+            <button onClick={handleAuthorClick} className="cursor-pointer font-bold text-primary hover:underline">{authorName}</button>
             <span>&nbsp;&nbsp;</span>
             <Hint label={formatFullTime(dateObj)}>
-              <button className="text-xs text-muted-foreground hover:underline">
+              <button className="cursor-pointer text-xs text-muted-foreground hover:underline">
                 {format(dateObj, 'h:mm a')}
               </button>
             </Hint>
