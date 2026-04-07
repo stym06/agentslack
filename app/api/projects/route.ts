@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 import { getIO } from '@/server/socket-server'
 import { cloneRepo, resolveRepoPath } from '@/lib/projects/git'
 
-function serializeProject(p: { id: string; channelId: string; name: string; repoPath: string; gitUrl: string | null; status: string; createdAt: Date }) {
+function serializeProject(p: { id: string; channelId: string | null; name: string; repoPath: string; gitUrl: string | null; status: string; createdAt: Date }) {
   return {
     id: p.id,
     channel_id: p.channelId,
@@ -27,12 +27,11 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const channelId = searchParams.get('channel_id')
 
-  if (!channelId) {
-    return NextResponse.json({ error: 'channel_id required' }, { status: 400 })
-  }
+  const where: Record<string, unknown> = {}
+  if (channelId) where.channelId = channelId
 
   const projects = await db.project.findMany({
-    where: { channelId },
+    where,
     orderBy: { createdAt: 'desc' },
   })
 
@@ -49,8 +48,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { channel_id, name, repo_path, git_url } = body
 
-  if (!channel_id || !name) {
-    return NextResponse.json({ error: 'channel_id and name required' }, { status: 400 })
+  if (!name) {
+    return NextResponse.json({ error: 'name required' }, { status: 400 })
   }
 
   if (!repo_path && !git_url) {
@@ -70,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     const project = await db.project.create({
       data: {
-        channelId: channel_id,
+        channelId: channel_id || null,
         name,
         repoPath: resolvedPath,
         status: 'active',
@@ -78,14 +77,14 @@ export async function POST(req: NextRequest) {
     })
 
     const serialized = serializeProject(project)
-    io.to(`channel:${channel_id}`).emit('project:created' as any, serialized)
+    if (channel_id) io.to(`channel:${channel_id}`).emit('project:created' as any, serialized)
     return NextResponse.json(serialized)
   }
 
   // Git URL: create with cloning status, clone async
   const project = await db.project.create({
     data: {
-      channelId: channel_id,
+      channelId: channel_id || null,
       name,
       repoPath: '', // will be set after clone
       gitUrl: git_url,
@@ -94,7 +93,7 @@ export async function POST(req: NextRequest) {
   })
 
   const serialized = serializeProject(project)
-  io.to(`channel:${channel_id}`).emit('project:created' as any, serialized)
+  if (channel_id) io.to(`channel:${channel_id}`).emit('project:created' as any, serialized)
 
   // Clone asynchronously
   cloneRepo(project.id, git_url)

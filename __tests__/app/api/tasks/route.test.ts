@@ -58,14 +58,23 @@ describe('GET /api/tasks', () => {
     expect(await res.json()).toEqual({ error: 'Unauthorized' })
   })
 
-  it('returns 400 when channel_id is missing', async () => {
+  it('returns all tasks when channel_id is omitted', async () => {
     mockGetServerSession.mockResolvedValue(MOCK_SESSION)
+    mockDb.task.findMany.mockResolvedValue([])
+    mockDb.taskGroup.findMany.mockResolvedValue([])
 
     const req = new NextRequest('http://localhost/api/tasks')
     const res = await GET(req)
 
-    expect(res.status).toBe(400)
-    expect(await res.json()).toEqual({ error: 'channel_id required' })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.tasks).toEqual([])
+    expect(body.groups).toEqual([])
+    expect(mockDb.task.findMany).toHaveBeenCalledWith({
+      where: {},
+      orderBy: { taskNumber: 'asc' },
+      include: { message: true, group: true },
+    })
   })
 
   it('returns enriched tasks and groups', async () => {

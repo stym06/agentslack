@@ -28,7 +28,7 @@ export function MentionDropdown({
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   useEffect(() => {
-    fetch(`/api/channels/${channelId}/agents`)
+    fetch('/api/agents')
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setAgents(Array.isArray(data) ? data : []))
       .catch(() => setAgents([]))

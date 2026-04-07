@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Sidebar } from './Sidebar'
+import { Sidebar, type ActiveView } from './Sidebar'
 import { MainPane } from './MainPane'
+import { GlobalTasksPane } from './GlobalTasksPane'
+import { GlobalProjectsPane } from './GlobalProjectsPane'
 import { AgentProfilePanel } from '@/components/agents/AgentProfilePanel'
 import { AgentProfileProvider } from '@/components/agents/AgentProfileContext'
 import type { Agent, Channel } from '@/types'
 
 export function DashboardLayout() {
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState<ActiveView>('channel')
   const [channels, setChannels] = useState<Channel[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
@@ -44,13 +47,20 @@ export function DashboardLayout() {
     closeAgentProfile: () => setSelectedAgentId(null),
   }), [openAgentProfileByName])
 
+  const handleChannelSelect = (id: string) => {
+    setActiveChannelId(id)
+    setActiveView('channel')
+  }
+
   return (
     <AgentProfileProvider value={profileContext}>
       <div className="flex h-full overflow-hidden">
         <div className="w-60 shrink-0">
           <Sidebar
             activeChannelId={activeChannelId}
-            onChannelSelect={setActiveChannelId}
+            activeView={activeView}
+            onChannelSelect={handleChannelSelect}
+            onViewSelect={setActiveView}
             onAgentSelect={(id) => setSelectedAgentId((prev) => prev === id ? null : id)}
             channels={channels}
             agents={agents}
@@ -58,7 +68,13 @@ export function DashboardLayout() {
           />
         </div>
         <div className="flex-1 min-w-0">
-          <MainPane channelId={activeChannelId} channels={channels} />
+          {activeView === 'tasks' ? (
+            <GlobalTasksPane />
+          ) : activeView === 'projects' ? (
+            <GlobalProjectsPane />
+          ) : (
+            <MainPane channelId={activeChannelId} channels={channels} />
+          )}
         </div>
         {selectedAgentId && (
           <>

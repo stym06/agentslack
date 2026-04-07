@@ -165,14 +165,14 @@ model Task {
 
 model Project {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  channelId String   @map("channel_id") @db.Uuid
+  channelId String?  @map("channel_id") @db.Uuid
   name      String
   repoPath  String   @map("repo_path")
   gitUrl    String?  @map("git_url")
   status    String   @default("active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  channel  Channel        @relation(fields: [channelId], references: [id])
+  channel  Channel?       @relation(fields: [channelId], references: [id])
   tasks    Task[]
   sessions AgentSession[]
 

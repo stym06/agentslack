@@ -244,7 +244,7 @@ describe('POST /api/messages', () => {
     }
     mockDb.message.create.mockResolvedValue(userMessage)
     mockDb.user.findUnique.mockResolvedValue({ name: 'TestUser', avatarUrl: '/avatar.png' })
-    mockDb.channelAgent.findMany.mockResolvedValue([])
+    mockDb.agent.findMany.mockResolvedValue([])
 
     const req = new NextRequest('http://localhost/api/messages', {
       method: 'POST',
@@ -271,7 +271,7 @@ describe('POST /api/messages', () => {
     mockDb.user.findUnique.mockResolvedValue({ name: 'TestUser', avatarUrl: null })
     mockDb.message.count.mockResolvedValue(3)
     mockDb.message.update.mockResolvedValue({ ...userMessage, replyCount: 3 })
-    mockDb.channelAgent.findMany.mockResolvedValue([])
+    mockDb.agent.findMany.mockResolvedValue([])
 
     const req = new NextRequest('http://localhost/api/messages', {
       method: 'POST',
@@ -295,7 +295,7 @@ describe('POST /api/messages', () => {
     }
     mockDb.message.create.mockResolvedValue(userMessage)
     mockDb.user.findUnique.mockResolvedValue(null)
-    mockDb.channelAgent.findMany.mockResolvedValue([])
+    mockDb.agent.findMany.mockResolvedValue([])
 
     const req = new NextRequest('http://localhost/api/messages', {
       method: 'POST',
@@ -341,8 +341,8 @@ describe('POST /api/messages — deliverToAgents paths', () => {
   it('delivers to @mentioned agents in channel', async () => {
     setupPostMocks()
     mockExtractMentions.mockReturnValue(['bot'])
-    mockDb.channelAgent.findMany.mockResolvedValue([
-      { agent: { id: 'agent-1', name: 'bot', openclawId: 'bot', model: 'anthropic/claude-sonnet-4-5', soulMd: '', isAdmin: false } },
+    mockDb.agent.findMany.mockResolvedValue([
+      { id: 'agent-1', name: 'bot', openclawId: 'bot', model: 'anthropic/claude-sonnet-4-5', soulMd: '', isAdmin: false },
     ])
     const mockDaemon = mockGetAgentDaemon()
     mockDaemon.isReady.mockReturnValue(true)
@@ -351,7 +351,6 @@ describe('POST /api/messages — deliverToAgents paths', () => {
     mockDb.task.findFirst.mockResolvedValue(null)
     // For addSenderNames in thread context building (top-level msg gets threadId = userMessage.id)
     mockDb.message.findMany.mockResolvedValue([])
-    mockDb.agent.findMany.mockResolvedValue([])
     mockDb.user.findMany.mockResolvedValue([])
 
     const req = new NextRequest('http://localhost/api/messages', {
@@ -370,36 +369,6 @@ describe('POST /api/messages — deliverToAgents paths', () => {
     }))
   })
 
-  it('warns when mentioned agent not in channel', async () => {
-    setupPostMocks()
-    mockExtractMentions.mockReturnValue(['outsider'])
-    mockDb.channelAgent.findMany.mockResolvedValue([])
-    // Agent exists but not in channel
-    mockDb.agent.findMany.mockResolvedValue([{ name: 'outsider' }])
-    // The system message create
-    mockDb.message.create
-      .mockResolvedValueOnce({
-        id: 'msg-1', channelId: 'ch-1', threadId: null, senderType: 'user',
-        senderId: 'user-1', content: '@outsider hello', createdAt: new Date().toISOString(),
-      })
-      .mockResolvedValueOnce({
-        id: 'sys-1', channelId: 'ch-1', senderType: 'user', senderId: 'user-1',
-        content: '@outsider is not a member', metadata: { system: true },
-      })
-
-    const req = new NextRequest('http://localhost/api/messages', {
-      method: 'POST',
-      body: JSON.stringify({ channel_id: 'ch-1', content: '@outsider hello' }),
-    })
-    const res = await POST(req)
-    expect(res.status).toBe(200)
-
-    await flushAsync()
-
-    // Should have created system warning message
-    expect(mockDb.message.create).toHaveBeenCalledTimes(2)
-  })
-
   it('routes to last agent in thread when no mentions', async () => {
     mockGetServerSession.mockResolvedValue(MOCK_SESSION)
     const userMessage = {
@@ -412,8 +381,9 @@ describe('POST /api/messages — deliverToAgents paths', () => {
     mockDb.message.update.mockResolvedValue({ ...userMessage, replyCount: 2 })
 
     mockExtractMentions.mockReturnValue([])
-    const agentInChannel = { agent: { id: 'agent-1', name: 'bot', openclawId: 'bot', model: 'anthropic/claude-sonnet-4-5', soulMd: '', isAdmin: false } }
-    mockDb.channelAgent.findMany.mockResolvedValue([agentInChannel])
+    mockDb.agent.findMany.mockResolvedValue([
+      { id: 'agent-1', name: 'bot', openclawId: 'bot', model: 'anthropic/claude-sonnet-4-5', soulMd: '', isAdmin: false },
+    ])
     mockDb.message.findFirst.mockResolvedValue({ senderId: 'agent-1', senderType: 'agent' })
     mockDb.task.findFirst.mockResolvedValue(null)
 
@@ -424,7 +394,6 @@ describe('POST /api/messages — deliverToAgents paths', () => {
     mockDb.agent.update.mockResolvedValue({})
     // For thread context
     mockDb.message.findMany.mockResolvedValue([])
-    mockDb.agent.findMany.mockResolvedValue([])
     mockDb.user.findMany.mockResolvedValue([])
 
     const req = new NextRequest('http://localhost/api/messages', {
@@ -442,8 +411,8 @@ describe('POST /api/messages — deliverToAgents paths', () => {
   it('skips agent that is not ready', async () => {
     setupPostMocks()
     mockExtractMentions.mockReturnValue(['bot'])
-    mockDb.channelAgent.findMany.mockResolvedValue([
-      { agent: { id: 'agent-1', name: 'bot', openclawId: 'bot' } },
+    mockDb.agent.findMany.mockResolvedValue([
+      { id: 'agent-1', name: 'bot', openclawId: 'bot' },
     ])
     const mockDaemon = mockGetAgentDaemon()
     mockDaemon.isReady.mockReturnValue(false)
@@ -464,8 +433,8 @@ describe('POST /api/messages — deliverToAgents paths', () => {
   it('resets agent status when delivery fails', async () => {
     setupPostMocks()
     mockExtractMentions.mockReturnValue(['bot'])
-    mockDb.channelAgent.findMany.mockResolvedValue([
-      { agent: { id: 'agent-1', name: 'bot', openclawId: 'bot' } },
+    mockDb.agent.findMany.mockResolvedValue([
+      { id: 'agent-1', name: 'bot', openclawId: 'bot' },
     ])
     const mockDaemon = mockGetAgentDaemon()
     mockDaemon.isReady.mockReturnValue(true)
@@ -501,8 +470,8 @@ describe('POST /api/messages — deliverToAgents paths', () => {
     mockDb.message.update.mockResolvedValue({ ...userMessage, replyCount: 2 })
 
     mockExtractMentions.mockReturnValue(['bot'])
-    mockDb.channelAgent.findMany.mockResolvedValue([
-      { agent: { id: 'agent-1', name: 'bot', openclawId: 'bot' } },
+    mockDb.agent.findMany.mockResolvedValue([
+      { id: 'agent-1', name: 'bot', openclawId: 'bot' },
     ])
     mockDb.task.findFirst.mockResolvedValue({ id: 'task-1', messageId: 'thread-1' })
 
@@ -540,8 +509,8 @@ describe('POST /api/messages — deliverToAgents paths', () => {
     mockDb.user.findUnique.mockResolvedValue({ name: 'TestUser', avatarUrl: null })
 
     mockExtractMentions.mockReturnValue(['bot'])
-    mockDb.channelAgent.findMany.mockResolvedValue([
-      { agent: { id: 'agent-1', name: 'bot', openclawId: 'bot', model: 'anthropic/claude-sonnet-4-5', soulMd: '', isAdmin: false } },
+    mockDb.agent.findMany.mockResolvedValue([
+      { id: 'agent-1', name: 'bot', openclawId: 'bot', model: 'anthropic/claude-sonnet-4-5', soulMd: '', isAdmin: false },
     ])
     mockDb.project.findUnique.mockResolvedValue({ id: 'proj-1', name: 'MyProject', status: 'active', repoPath: '/repo' })
     mockDb.taskGroup.findFirst.mockResolvedValue(null)
@@ -579,7 +548,7 @@ describe('POST /api/messages — deliverToAgents paths', () => {
   it('returns early when no agents to deliver to', async () => {
     setupPostMocks()
     mockExtractMentions.mockReturnValue([])
-    mockDb.channelAgent.findMany.mockResolvedValue([])
+    mockDb.agent.findMany.mockResolvedValue([])
 
     const mockDaemon = mockGetAgentDaemon()
 

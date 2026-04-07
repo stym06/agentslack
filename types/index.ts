@@ -89,7 +89,7 @@ export type Task = {
 
 export type Project = {
   id: string
-  channel_id: string
+  channel_id: string | null
   name: string
   repo_path: string
   git_url: string | null

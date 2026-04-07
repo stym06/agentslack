@@ -20,7 +20,7 @@ export function CreateProjectModal({
   onClose,
   onCreated,
 }: {
-  channelId: string
+  channelId?: string
   onClose: () => void
   onCreated?: (project: any) => void
 }) {
@@ -36,9 +36,9 @@ export function CreateProjectModal({
     if (!name.trim() || isSubmitting) return
 
     const payload: Record<string, string> = {
-      channel_id: channelId,
       name: name.trim(),
     }
+    if (channelId) payload.channel_id = channelId
 
     if (sourceType === 'local') {
       if (!repoPath.trim()) return

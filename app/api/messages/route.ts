@@ -149,60 +149,20 @@ async function deliverToAgents(
   const io = getIO()
   const daemon = getAgentDaemon()
 
-  const channelAgents = await db.channelAgent.findMany({
-    where: { channelId },
-    include: { agent: true },
-  })
+  // Look up all workspace agents (any agent can be called from any channel)
+  const allAgents = await db.agent.findMany()
 
   // Deliver to @mentioned agents, or if in a thread with no mentions,
   // deliver to the last agent who sent a message in that thread
   const mentions = extractMentions(userMessageContent)
 
-  let agentsToDeliver = channelAgents.filter((ca) =>
+  let agentsToDeliver = allAgents.filter((agent) =>
     mentions.some(
       (m) =>
-        ca.agent.name.toLowerCase() === m ||
-        ca.agent.openclawId.toLowerCase() === m,
+        agent.name.toLowerCase() === m ||
+        agent.openclawId.toLowerCase() === m,
     ),
   )
-
-  // Check for mentions that match agents NOT in this channel
-  if (mentions.length > 0 && agentsToDeliver.length < mentions.length) {
-    const channelAgentNames = new Set(
-      channelAgents.flatMap((ca) => [ca.agent.name.toLowerCase(), ca.agent.openclawId.toLowerCase()])
-    )
-    const unmatchedMentions = mentions.filter((m) => !channelAgentNames.has(m))
-
-    if (unmatchedMentions.length > 0) {
-      // Check if these are real agents that just aren't in the channel
-      const existingAgents = await db.agent.findMany({
-        where: {
-          OR: unmatchedMentions.flatMap((m) => [
-            { name: { equals: m, mode: 'insensitive' as const } },
-            { openclawId: { equals: m, mode: 'insensitive' as const } },
-          ]),
-        },
-        select: { name: true },
-      })
-
-      for (const agent of existingAgents) {
-        const sysMsg = await db.message.create({
-          data: {
-            channelId,
-            senderType: 'user',
-            senderId: userId || '00000000-0000-0000-0000-000000000000',
-            content: `@${agent.name} is not a member of this channel. Add them in the Agents tab first.`,
-            metadata: { system: true, type: 'warning' },
-          },
-        })
-        io.to(`channel:${channelId}`).emit('message:new', {
-          ...sysMsg,
-          sender_name: 'System',
-          sender_avatar: null,
-        })
-      }
-    }
-  }
 
   // Thread reply with no mention → route to last agent in thread
   if (agentsToDeliver.length === 0 && threadId) {
@@ -211,7 +171,7 @@ async function deliverToAgents(
       orderBy: { createdAt: 'desc' },
     })
     if (lastAgentMessage) {
-      const match = channelAgents.find((ca) => ca.agent.id === lastAgentMessage.senderId)
+      const match = allAgents.find((a) => a.id === lastAgentMessage.senderId)
       if (match) agentsToDeliver = [match]
     }
   }
@@ -237,8 +197,7 @@ async function deliverToAgents(
         })
       }
 
-      for (const ca of agentsToDeliver) {
-        const agent = ca.agent
+      for (const agent of agentsToDeliver) {
         try {
           // Create a task message
           const taskNumber = await getNextTaskNumber(channelId)
@@ -397,9 +356,7 @@ async function deliverToAgents(
     })
   }
 
-  for (const ca of agentsToDeliver) {
-    const agent = ca.agent
-
+  for (const agent of agentsToDeliver) {
     // Route to task session if this is a task thread with an active session
     if (taskForThread) {
       const session = daemon.getSession(agent.id, taskForThread.id)

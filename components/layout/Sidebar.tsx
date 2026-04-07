@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
-import { Hash, ChevronDown, Plus, Bot, LogOut } from 'lucide-react'
+import { Hash, ChevronDown, Plus, Bot, LogOut, ListTodo, FolderGit2 } from 'lucide-react'
 import type { Channel, Agent } from '@/types'
 import { CreateAgentModal } from '@/components/agents/CreateAgentModal'
 import { CreateChannelModal } from '@/components/channels/CreateChannelModal'
@@ -12,16 +12,22 @@ import { Separator } from '@/components/ui/separator'
 import { Hint } from '@/components/hint'
 import { cn } from '@/lib/utils'
 
+export type ActiveView = 'channel' | 'tasks' | 'projects'
+
 export function Sidebar({
   activeChannelId,
+  activeView,
   onChannelSelect,
+  onViewSelect,
   onAgentSelect,
   channels,
   agents,
   onAgentsChange,
 }: {
   activeChannelId: string | null
+  activeView: ActiveView
   onChannelSelect: (id: string) => void
+  onViewSelect: (view: ActiveView) => void
   onAgentSelect: (agentId: string) => void
   channels: Channel[]
   agents: Agent[]
@@ -61,6 +67,21 @@ export function Sidebar({
     }
   }
 
+  const navItem = (view: ActiveView, label: string, Icon: typeof ListTodo) => (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => onViewSelect(view)}
+      className={cn(
+        'flex h-7 w-full items-center justify-start gap-1.5 px-[18px] text-sm font-normal text-sidebar-foreground',
+        activeView === view && 'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent',
+      )}
+    >
+      <Icon className="size-3.5 shrink-0" />
+      <span>{label}</span>
+    </Button>
+  )
+
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Workspace header */}
@@ -72,8 +93,12 @@ export function Sidebar({
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
+        {/* Global views */}
+        {navItem('tasks', 'Tasks', ListTodo)}
+        {navItem('projects', 'Projects', FolderGit2)}
+
         {/* Channels section */}
-        <div className="mt-1">
+        <div className="mt-3">
           <div className="group flex items-center px-2">
             <Button
               onClick={() => setChannelsOpen(!channelsOpen)}
@@ -104,7 +129,7 @@ export function Sidebar({
                 onClick={() => onChannelSelect(channel.id)}
                 className={cn(
                   'flex h-7 w-full items-center justify-start gap-1.5 px-[18px] text-sm font-normal text-sidebar-foreground',
-                  activeChannelId === channel.id && 'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent',
+                  activeView === 'channel' && activeChannelId === channel.id && 'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent',
                 )}
               >
                 <Hash className="size-3.5 shrink-0" />

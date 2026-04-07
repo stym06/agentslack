@@ -7,7 +7,7 @@ import type { Agent, Project } from '@/types'
 
 interface AssignAgentDropdownProps {
   taskId: string
-  channelId: string
+  channelId?: string
   currentAgentId?: string | null
   onAssigned?: () => void
 }
@@ -31,7 +31,7 @@ export function AssignAgentDropdown({
 
     setLoading(true)
     Promise.all([
-      fetch(`/api/channels/${channelId}/agents`).then((r) => r.json()),
+      fetch('/api/agents').then((r) => r.json()),
       fetch(`/api/projects?channel_id=${channelId}`).then((r) => r.json()),
     ])
       .then(([agentsData, projectsData]) => {

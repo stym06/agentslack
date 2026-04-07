@@ -16,11 +16,11 @@ export async function GET(req: NextRequest) {
   const channelId = searchParams.get('channel_id')
   const status = searchParams.get('status') || 'all'
 
-  if (!channelId) {
-    return NextResponse.json({ error: 'channel_id required' }, { status: 400 })
+  // channel_id is optional — omit for global task list
+  const where: Record<string, unknown> = {}
+  if (channelId) {
+    where.channelId = channelId
   }
-
-  const where: Record<string, unknown> = { channelId }
   if (status !== 'all') {
     where.status = status
   }
@@ -39,9 +39,11 @@ export async function GET(req: NextRequest) {
     }),
   )
 
-  // Also fetch groups for this channel
+  // Also fetch groups
+  const groupWhere: Record<string, unknown> = {}
+  if (channelId) groupWhere.channelId = channelId
   const groups = await db.taskGroup.findMany({
-    where: { channelId },
+    where: groupWhere,
     orderBy: { createdAt: 'asc' },
   })
 

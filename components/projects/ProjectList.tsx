@@ -13,14 +13,14 @@ const STATUS_INDICATOR: Record<string, { color: string; label: string }> = {
   error: { color: 'bg-red-500', label: 'Error' },
 }
 
-export function ProjectList({ channelId }: { channelId: string }) {
+export function ProjectList({ channelId }: { channelId?: string }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const { socket } = useSocket()
 
   useEffect(() => {
-    fetch(`/api/projects?channel_id=${channelId}`)
+    fetch(`/api/projects${channelId ? `?channel_id=${channelId}` : ''}`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         setProjects(Array.isArray(data) ? data : [])
@@ -36,7 +36,7 @@ export function ProjectList({ channelId }: { channelId: string }) {
     if (!socket) return
 
     const handleCreated = (project: Project) => {
-      if (project.channel_id !== channelId) return
+      if (channelId && project.channel_id !== channelId) return
       setProjects((prev) => {
         if (prev.some((p) => p.id === project.id)) return prev
         return [project, ...prev]
@@ -50,7 +50,7 @@ export function ProjectList({ channelId }: { channelId: string }) {
     }
 
     const handleDeleted = (data: { project_id: string; channel_id: string }) => {
-      if (data.channel_id !== channelId) return
+      if (channelId && data.channel_id !== channelId) return
       setProjects((prev) => prev.filter((p) => p.id !== data.project_id))
     }
 

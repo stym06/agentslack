@@ -45,14 +45,20 @@ describe('GET /api/projects', () => {
     expect(await res.json()).toEqual({ error: 'Unauthorized' })
   })
 
-  it('returns 400 when channel_id is missing', async () => {
+  it('returns all projects when channel_id is omitted', async () => {
     mockGetServerSession.mockResolvedValue(MOCK_SESSION)
+    mockDb.project.findMany.mockResolvedValue([])
 
     const req = new NextRequest('http://localhost/api/projects')
     const res = await GET(req)
 
-    expect(res.status).toBe(400)
-    expect(await res.json()).toEqual({ error: 'channel_id required' })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual([])
+    expect(mockDb.project.findMany).toHaveBeenCalledWith({
+      where: {},
+      orderBy: { createdAt: 'desc' },
+    })
   })
 
   it('returns serialized projects', async () => {
@@ -106,7 +112,7 @@ describe('POST /api/projects', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 400 when channel_id or name is missing', async () => {
+  it('returns 400 when name is missing', async () => {
     mockGetServerSession.mockResolvedValue(MOCK_SESSION)
 
     const req = new NextRequest('http://localhost/api/projects', {
@@ -116,7 +122,7 @@ describe('POST /api/projects', () => {
     const res = await POST(req)
 
     expect(res.status).toBe(400)
-    expect(await res.json()).toEqual({ error: 'channel_id and name required' })
+    expect(await res.json()).toEqual({ error: 'name required' })
   })
 
   it('returns 400 when neither repo_path nor git_url provided', async () => {

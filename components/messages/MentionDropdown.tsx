@@ -25,7 +25,7 @@ export function MentionDropdown({
   const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetch(`/api/channels/${channelId}/agents`)
+    fetch('/api/agents')
       .then((res) => (res.ok ? res.json() : []))
       .then((data: AgentOption[]) => setAgents(data))
       .catch(() => setAgents([]))

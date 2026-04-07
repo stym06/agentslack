@@ -108,8 +108,8 @@ function TaskRow({
   indent,
 }: {
   task: Task
-  channelId: string
-  onOpenTask: (messageId: string) => void
+  channelId?: string
+  onOpenTask?: (messageId: string) => void
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>
   indent?: boolean
 }) {
@@ -131,7 +131,7 @@ function TaskRow({
         }}
       />
       <span
-        onClick={() => onOpenTask(task.message_id)}
+        onClick={() => onOpenTask?.(task.message_id)}
         className="flex-1 cursor-pointer truncate text-sm font-medium hover:underline"
       >
         {task.title}
@@ -167,8 +167,8 @@ function TaskRow({
 }
 
 interface TaskListProps {
-  channelId: string
-  onOpenTask: (messageId: string) => void
+  channelId?: string
+  onOpenTask?: (messageId: string) => void
 }
 
 export function TaskList({ channelId, onOpenTask }: TaskListProps) {
@@ -183,7 +183,9 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
   const { socket } = useSocket()
 
   const fetchTasks = useCallback(() => {
-    fetch(`/api/tasks?channel_id=${channelId}&status=${filter}`)
+    const params = new URLSearchParams({ status: filter })
+    if (channelId) params.set('channel_id', channelId)
+    fetch(`/api/tasks?${params}`)
       .then((res) => res.ok ? res.json() : { tasks: [], groups: [] })
       .then((data) => {
         setTasks(Array.isArray(data.tasks) ? data.tasks : Array.isArray(data) ? data : [])
@@ -207,7 +209,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
     if (!socket) return
 
     const handleTaskCreated = (task: Task & { channel_id: string }) => {
-      if (task.channel_id !== channelId) return
+      if (channelId && task.channel_id !== channelId) return
       setTasks((prev) => {
         if (prev.some((t) => t.id === task.id)) return prev
         return [...prev, task]
@@ -223,7 +225,9 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
         setGroups((prev) => {
           if (prev.some((g) => g.id === task.group_id)) return prev
           // Refetch groups
-          fetch(`/api/tasks?channel_id=${channelId}&status=all`)
+          const rp = new URLSearchParams({ status: 'all' })
+          if (channelId) rp.set('channel_id', channelId)
+          fetch(`/api/tasks?${rp}`)
             .then((res) => res.ok ? res.json() : { groups: [] })
             .then((data) => {
               if (Array.isArray(data.groups)) setGroups(data.groups)
@@ -235,7 +239,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
     }
 
     const handleTaskUpdated = (task: Task & { channel_id: string }) => {
-      if (task.channel_id !== channelId) return
+      if (channelId && task.channel_id !== channelId) return
       setTasks((prev) => {
         const idx = prev.findIndex((t) => t.id === task.id)
         if (idx >= 0) {
@@ -270,7 +274,7 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
         setTasks((prev) => [...prev, task])
         setNewTitle('')
         setShowCreate(false)
-        onOpenTask(task.message_id)
+        onOpenTask?.(task.message_id)
       }
     } catch (err) {
       console.error('Failed to create task:', err)
@@ -320,15 +324,17 @@ export function TaskList({ channelId, onOpenTask }: TaskListProps) {
             </button>
           ))}
         </div>
-        <div className="ml-auto">
-          <button
-            onClick={() => setShowCreate(true)}
-            className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Task
-          </button>
-        </div>
+        {channelId && (
+          <div className="ml-auto">
+            <button
+              onClick={() => setShowCreate(true)}
+              className="cursor-pointer inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Task
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Create task inline */}
