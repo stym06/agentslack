@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, MessageSquare, ListChecks, X } from 'lucide-react'
+import { Bell, MessageSquare, ListChecks, X, CheckCheck } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { Notification } from './DashboardLayout'
@@ -12,10 +12,12 @@ export function NotificationsPane({
   notifications,
   onNotificationClick,
   onClearNotification,
+  onMarkAllRead,
 }: {
   notifications: Notification[]
   onNotificationClick: (notif: Notification) => void
   onClearNotification: (id: string) => void
+  onMarkAllRead: () => void
 }) {
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -36,9 +38,18 @@ export function NotificationsPane({
         <Bell className="size-5" />
         <h1 className="text-lg font-bold">Notifications</h1>
         {unreadCount > 0 && (
-          <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-            {unreadCount}
-          </span>
+          <>
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+              {unreadCount}
+            </span>
+            <button
+              onClick={onMarkAllRead}
+              className="ml-auto flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <CheckCheck className="size-3.5" />
+              Mark all read
+            </button>
+          </>
         )}
       </div>
 

@@ -271,6 +271,7 @@ export function DashboardLayout() {
               notifications={notifications}
               onNotificationClick={handleNotificationClick}
               onClearNotification={handleClearNotification}
+              onMarkAllRead={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}
             />
           ) : (
             <MainPane channelId={activeChannelId} channels={channels} onOpenTaskDetail={handleOpenTask} />
