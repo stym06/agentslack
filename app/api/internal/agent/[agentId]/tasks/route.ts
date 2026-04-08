@@ -13,11 +13,8 @@ export async function GET(
   const channelId = searchParams.get('channelId')
   const status = searchParams.get('status') || 'all'
 
-  if (!channelId) {
-    return NextResponse.json({ error: 'channelId required' }, { status: 400 })
-  }
-
-  const where: Record<string, unknown> = { channelId }
+  const where: Record<string, unknown> = {}
+  if (channelId) where.channelId = channelId
   if (status !== 'all') {
     where.status = status
   }

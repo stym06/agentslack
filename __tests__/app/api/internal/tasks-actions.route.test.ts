@@ -164,11 +164,10 @@ describe('POST /api/internal/agent/[agentId]/tasks/claim', () => {
 describe('POST /api/internal/agent/[agentId]/tasks/unclaim', () => {
   const url = 'http://localhost/api/internal/agent/agent-1/tasks/unclaim'
 
-  it('returns 400 when channelId or task_number missing', async () => {
-    const req = makeRequest(url, { channelId: 'ch-1' })
+  it('returns 400 when neither taskId nor channelId+task_number provided', async () => {
+    const req = makeRequest(url, {})
     const res = await unclaimPOST(req, PARAMS)
     expect(res.status).toBe(400)
-    expect(await res.json()).toEqual({ error: 'channelId and task_number required' })
   })
 
   it('returns 404 when task not found', async () => {
@@ -222,11 +221,11 @@ describe('POST /api/internal/agent/[agentId]/tasks/unclaim', () => {
 describe('POST /api/internal/agent/[agentId]/tasks/update-status', () => {
   const url = 'http://localhost/api/internal/agent/agent-1/tasks/update-status'
 
-  it('returns 400 when required fields missing', async () => {
+  it('returns 400 when status is missing', async () => {
     const req = makeRequest(url, { channelId: 'ch-1', task_number: 1 })
     const res = await updateStatusPOST(req, PARAMS)
     expect(res.status).toBe(400)
-    expect(await res.json()).toEqual({ error: 'channelId, task_number, and status required' })
+    expect(await res.json()).toEqual({ error: 'status required' })
   })
 
   it('returns 400 for invalid status', async () => {

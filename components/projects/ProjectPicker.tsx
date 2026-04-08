@@ -20,17 +20,14 @@ export function ProjectPicker({ channelId, selectedProject, onSelect }: ProjectP
 
   useEffect(() => {
     if (!open || loaded) return
-    fetch(`/api/projects?channel_id=${channelId}`)
+    fetch('/api/projects')
       .then((r) => r.ok ? r.json() : [])
       .then((data) => {
         setProjects((Array.isArray(data) ? data : []).filter((p: Project) => p.status === 'active'))
         setLoaded(true)
       })
       .catch(() => setLoaded(true))
-  }, [open, loaded, channelId])
-
-  // Reset loaded state when channelId changes
-  useEffect(() => { setLoaded(false) }, [channelId])
+  }, [open, loaded])
 
   if (selectedProject) {
     return null // chip is shown above the editor, no need for the button
@@ -60,7 +57,7 @@ export function ProjectPicker({ channelId, selectedProject, onSelect }: ProjectP
               <div className="px-3 py-3 text-xs text-muted-foreground">Loading...</div>
             ) : projects.length === 0 ? (
               <div className="px-3 py-3 text-xs text-muted-foreground">
-                No projects in this channel
+                No projects yet
               </div>
             ) : (
               projects.map((project) => (

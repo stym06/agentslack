@@ -13,13 +13,17 @@ export async function POST(
 ) {
   const { agentId } = await params
   const body = await req.json()
-  const { channelId, task_number, status } = body
+  const { channelId, task_number, taskId, status } = body
 
-  if (!channelId || !task_number || !status) {
+  if (!taskId && (!channelId || !task_number)) {
     return NextResponse.json(
-      { error: 'channelId, task_number, and status required' },
+      { error: 'taskId or (channelId + task_number) required, plus status' },
       { status: 400 },
     )
+  }
+
+  if (!status) {
+    return NextResponse.json({ error: 'status required' }, { status: 400 })
   }
 
   if (!VALID_STATUSES.includes(status)) {
@@ -29,9 +33,9 @@ export async function POST(
     )
   }
 
-  const task = await db.task.findUnique({
-    where: { channelId_taskNumber: { channelId, taskNumber: task_number } },
-  })
+  const task = taskId
+    ? await db.task.findUnique({ where: { id: taskId } })
+    : await db.task.findUnique({ where: { channelId_taskNumber: { channelId, taskNumber: task_number } } })
 
   if (!task) {
     return NextResponse.json({ error: 'Task not found' }, { status: 404 })

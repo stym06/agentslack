@@ -157,6 +157,7 @@ If you receive a system warmup message like "[SYSTEM] warmup", respond with just
 // Callback for status changes
 type StatusCallback = (agentId: string, status: 'loading' | 'online' | 'offline') => void
 type SessionStatusCallback = (agentId: string, taskId: string, status: 'active' | 'terminated') => void
+type ActivityCallback = (agentId: string, event: import('@/types').AgentActivityEvent) => void
 
 class AgentDaemon {
   private processes = new Map<string, AgentProcess>()
@@ -166,6 +167,7 @@ class AgentDaemon {
   private shuttingDown = false
   private onStatusChange: StatusCallback | null = null
   private onSessionStatusChange: SessionStatusCallback | null = null
+  private onActivity: ActivityCallback | null = null
 
   // Session pool: Map<agentId, Map<taskId, session>>
   private sessions = new Map<string, Map<string, AgentSessionProcess>>()
@@ -176,6 +178,10 @@ class AgentDaemon {
 
   setSessionStatusCallback(cb: SessionStatusCallback) {
     this.onSessionStatusChange = cb
+  }
+
+  setActivityCallback(cb: ActivityCallback) {
+    this.onActivity = cb
   }
 
   startAll(agents: AgentConfig[]) {
@@ -303,39 +309,61 @@ class AgentDaemon {
   }
 
   private handleAgentEvent(agentId: string, event: any, agentProcess: AgentProcess) {
-    // Log all events for debugging
+    const now = Date.now()
+
     if (event.type === 'system') {
       console.log(`[AgentDaemon] ${agentProcess.name} system event: ${event.subtype}`)
       if (event.subtype === 'init' && event.mcp_servers) {
         const mcpStatus = event.mcp_servers.map((s: any) => `${s.name}:${s.status}`).join(', ')
         console.log(`[AgentDaemon] ${agentProcess.name} MCP servers: ${mcpStatus}`)
       }
+      this.onActivity?.(agentId, {
+        type: 'system',
+        subtype: event.subtype,
+        mcpServers: event.mcp_servers?.map((s: any) => ({ name: s.name, status: s.status })),
+        timestamp: now,
+      })
     }
 
     if (event.type === 'assistant') {
-      // Log what the assistant is doing (tool calls, text responses)
       const content = event.message?.content
       if (Array.isArray(content)) {
         for (const block of content) {
           if (block.type === 'text') {
             console.log(`[AgentDaemon] ${agentProcess.name} text: "${block.text?.substring(0, 100)}"`)
+            this.onActivity?.(agentId, {
+              type: 'text',
+              text: (block.text ?? '').substring(0, 200),
+              timestamp: now,
+            })
           } else if (block.type === 'tool_use') {
             console.log(`[AgentDaemon] ${agentProcess.name} tool_use: ${block.name}(${JSON.stringify(block.input).substring(0, 100)})`)
+            this.onActivity?.(agentId, {
+              type: 'tool_use',
+              toolName: block.name,
+              input: JSON.stringify(block.input).substring(0, 200),
+              timestamp: now,
+            })
           }
         }
       }
     }
 
-    // Mark ready after the first successful result (warmup response)
     if (event.type === 'result') {
       console.log(`[AgentDaemon] ${agentProcess.name} result: ${event.subtype} (${event.duration_ms}ms, cost: $${event.total_cost_usd?.toFixed(4)}, result: "${event.result?.substring(0, 100)}")`)
+      this.onActivity?.(agentId, {
+        type: 'result',
+        subtype: event.subtype,
+        durationMs: event.duration_ms ?? 0,
+        totalCostUsd: event.total_cost_usd ?? null,
+        timestamp: now,
+      })
 
       if (!agentProcess.ready) {
         agentProcess.ready = true
         console.log(`[AgentDaemon] ✓ ${agentProcess.name} is READY`)
         this.onStatusChange?.(agentId, 'online')
 
-        // Flush pending messages
         for (const msg of agentProcess.pendingMessages) {
           console.log(`[AgentDaemon] Flushing queued message to ${agentProcess.name}`)
           agentProcess.process.stdin?.write(msg + '\n')
@@ -600,9 +628,16 @@ class AgentDaemon {
 
   private handleSessionEvent(agentId: string, taskId: string, event: any, session: AgentSessionProcess) {
     const label = `${session.config.taskNumber}`
+    const now = Date.now()
 
     if (event.type === 'system') {
       console.log(`[AgentDaemon] Session task#${label} system: ${event.subtype}`)
+      this.onActivity?.(agentId, {
+        type: 'system',
+        subtype: event.subtype,
+        mcpServers: event.mcp_servers?.map((s: any) => ({ name: s.name, status: s.status })),
+        timestamp: now,
+      })
     }
 
     if (event.type === 'assistant') {
@@ -611,8 +646,10 @@ class AgentDaemon {
         for (const block of content) {
           if (block.type === 'text') {
             console.log(`[AgentDaemon] Session task#${label} text: "${block.text?.substring(0, 100)}"`)
+            this.onActivity?.(agentId, { type: 'text', text: (block.text ?? '').substring(0, 200), timestamp: now })
           } else if (block.type === 'tool_use') {
             console.log(`[AgentDaemon] Session task#${label} tool_use: ${block.name}(${JSON.stringify(block.input).substring(0, 100)})`)
+            this.onActivity?.(agentId, { type: 'tool_use', toolName: block.name, input: JSON.stringify(block.input).substring(0, 200), timestamp: now })
           }
         }
       }
@@ -620,6 +657,7 @@ class AgentDaemon {
 
     if (event.type === 'result') {
       console.log(`[AgentDaemon] Session task#${label} result: ${event.subtype} (${event.duration_ms}ms, cost: $${event.total_cost_usd?.toFixed(4)})`)
+      this.onActivity?.(agentId, { type: 'result', subtype: event.subtype, durationMs: event.duration_ms ?? 0, totalCostUsd: event.total_cost_usd ?? null, timestamp: now })
 
       if (!session.ready) {
         session.ready = true

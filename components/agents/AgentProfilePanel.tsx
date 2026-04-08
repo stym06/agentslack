@@ -19,6 +19,7 @@ import { AgentProcessControls } from './AgentProcessControls'
 import { AgentInstructionsEditor } from './AgentInstructionsEditor'
 import { AgentSkillsPanel } from './AgentSkillsPanel'
 import { AgentMemoryPanel } from './AgentMemoryPanel'
+import { AgentActivityStream } from './AgentActivityStream'
 
 type AgentProfile = {
   id: string
@@ -208,6 +209,7 @@ export function AgentProfilePanel({
 }) {
   const [agent, setAgent] = useState<AgentProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'profile' | 'activity'>('profile')
   const { socket } = useSocket()
 
   useEffect(() => {
@@ -235,15 +237,30 @@ export function AgentProfilePanel({
 
   return (
     <div className="flex h-full flex-col bg-card">
-      {/* Header */}
-      <div className="flex h-[49px] items-center justify-between border-b px-4">
-        <h2 className="text-sm font-bold">Profile</h2>
-        <Button variant="ghost" size="icon-sm" onClick={onClose}>
+      {/* Header with tabs */}
+      <div className="flex h-[49px] items-center border-b px-4">
+        <div className="flex gap-3">
+          {(['profile', 'activity'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                'cursor-pointer text-sm font-medium capitalize transition-colors',
+                activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+        <Button variant="ghost" size="icon-sm" onClick={onClose} className="ml-auto">
           <X className="size-4" />
         </Button>
       </div>
 
-      {loading ? (
+      {activeTab === 'activity' ? (
+        <AgentActivityStream agentId={agentId} />
+      ) : loading ? (
         <div className="flex flex-1 items-center justify-center">
           <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
         </div>

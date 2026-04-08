@@ -10,15 +10,15 @@ export async function POST(
 ) {
   const { agentId } = await params
   const body = await req.json()
-  const { channelId, task_number } = body
+  const { channelId, task_number, taskId } = body
 
-  if (!channelId || !task_number) {
-    return NextResponse.json({ error: 'channelId and task_number required' }, { status: 400 })
+  if (!taskId && (!channelId || !task_number)) {
+    return NextResponse.json({ error: 'taskId or (channelId + task_number) required' }, { status: 400 })
   }
 
-  const task = await db.task.findUnique({
-    where: { channelId_taskNumber: { channelId, taskNumber: task_number } },
-  })
+  const task = taskId
+    ? await db.task.findUnique({ where: { id: taskId } })
+    : await db.task.findUnique({ where: { channelId_taskNumber: { channelId, taskNumber: task_number } } })
 
   if (!task) {
     return NextResponse.json({ error: 'Task not found' }, { status: 404 })

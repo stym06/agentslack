@@ -35,6 +35,14 @@ export function initSocketServer(httpServer: HTTPServer) {
       console.log(`Socket ${socket.id} left thread:${threadId}`)
     })
 
+    socket.on('agent:join', (agentId: string) => {
+      socket.join(`agent:${agentId}`)
+    })
+
+    socket.on('agent:leave', (agentId: string) => {
+      socket.leave(`agent:${agentId}`)
+    })
+
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id)
     })

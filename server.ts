@@ -77,6 +77,11 @@ app.prepare().then(async () => {
         }
       })
 
+      daemon.setActivityCallback((agentId, event) => {
+        const io = getIO()
+        io.to(`agent:${agentId}`).emit('agent:activity' as any, { agent_id: agentId, event })
+      })
+
       daemon.startAll(agentConfigs)
       console.log(`> Agent daemon started with ${agentConfigs.length} agent(s)`)
     } catch (err) {

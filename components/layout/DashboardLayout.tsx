@@ -58,6 +58,14 @@ function useViewState() {
   return { view, channelId, taskId, highlightMessageId, navigate }
 }
 
+function playChime() {
+  try {
+    const audio = new Audio('/chime.wav')
+    audio.volume = 0.5
+    audio.play().catch(() => {})
+  } catch {}
+}
+
 export function DashboardLayout() {
   const { view: activeView, channelId: activeChannelId, taskId: openTaskId, highlightMessageId, navigate } = useViewState()
   const [channels, setChannels] = useState<Channel[]>([])
@@ -139,6 +147,7 @@ export function DashboardLayout() {
         messageId: msg.id,
       }
       setNotifications((prev) => [notif, ...prev].slice(0, 50))
+      playChime()
 
       // If this is a reply in a task thread, look up the task ID asynchronously
       if (threadId) {
@@ -174,6 +183,7 @@ export function DashboardLayout() {
         channelId,
       }
       setNotifications((prev) => [notif, ...prev].slice(0, 50))
+      playChime()
     }
 
     socket.on('message:new', handleNewMessage as any)
@@ -231,7 +241,10 @@ export function DashboardLayout() {
             activeView={openTaskId ? 'tasks' : activeView}
             onChannelSelect={handleChannelSelect}
             onViewSelect={(v) => navigate({ view: v, task: null })}
-            onAgentSelect={(id) => setSelectedAgentId((prev) => prev === id ? null : id)}
+            onAgentSelect={(id) => {
+              setSelectedAgentId((prev) => prev === id ? null : id)
+              if (openTaskId) navigate({ task: null, view: activeView })
+            }}
             channels={channels}
             agents={agents}
             onAgentsChange={setAgents}
@@ -255,7 +268,7 @@ export function DashboardLayout() {
             <MainPane channelId={activeChannelId} channels={channels} onOpenTaskDetail={handleOpenTask} />
           )}
         </div>
-        {selectedAgentId && !openTaskId && (
+        {selectedAgentId && (
           <>
             <div className="w-px shrink-0 bg-border" />
             <div className="w-[340px] shrink-0 overflow-hidden">

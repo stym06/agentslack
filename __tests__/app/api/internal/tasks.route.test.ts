@@ -52,11 +52,12 @@ beforeEach(() => {
 })
 
 describe('GET /api/internal/agent/[agentId]/tasks', () => {
-  it('returns 400 when channelId is missing', async () => {
+  it('returns all tasks globally when channelId is omitted', async () => {
+    mockDb.task.findMany.mockResolvedValue([])
     const req = makeGetRequest({})
     const res = await GET(req, { params: Promise.resolve({ agentId: 'agent-1' }) })
-    expect(res.status).toBe(400)
-    expect(await res.json()).toEqual({ error: 'channelId required' })
+    expect(res.status).toBe(200)
+    expect(mockDb.task.findMany).toHaveBeenCalledWith({ where: {}, orderBy: { taskNumber: 'asc' } })
   })
 
   it('returns all tasks when status is all (default)', async () => {

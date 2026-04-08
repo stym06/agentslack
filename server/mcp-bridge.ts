@@ -129,16 +129,17 @@ server.tool(
 
 server.tool(
   'list_tasks',
-  'List all tasks in a channel. Returns each task\'s number, title, status, and assignee.',
+  'List tasks. Returns each task\'s number, title, status, and assignee. Can filter by channel or list all tasks globally.',
   {
-    channelId: z.string().describe('The channel ID to list tasks for'),
+    channelId: z.string().optional().describe('Optional channel ID to filter tasks. Omit to list all tasks.'),
     status: z
       .enum(['all', 'todo', 'in_progress', 'in_review', 'done'])
       .default('all')
       .describe('Filter by status (default: all)'),
   },
   async ({ channelId, status }) => {
-    const params = new URLSearchParams({ channelId })
+    const params = new URLSearchParams()
+    if (channelId) params.set('channelId', channelId)
     if (status !== 'all') params.set('status', status)
     const result = await internalFetch(`/tasks?${params}`)
 
@@ -243,40 +244,44 @@ server.tool(
 
 server.tool(
   'unclaim_task',
-  'Release your claim on a task so someone else can pick it up.',
+  'Release your claim on a task so someone else can pick it up. Use taskId or (channelId + task_number).',
   {
-    channelId: z.string().describe('The channel ID'),
-    task_number: z.number().describe('The task number to unclaim'),
+    taskId: z.string().optional().describe('The task UUID to unclaim'),
+    channelId: z.string().optional().describe('The channel ID (required with task_number)'),
+    task_number: z.number().optional().describe('The task number to unclaim (required with channelId)'),
   },
-  async ({ channelId, task_number }) => {
+  async ({ taskId, channelId, task_number }) => {
     await internalFetch('/tasks/unclaim', {
       method: 'POST',
-      body: JSON.stringify({ channelId, task_number }),
+      body: JSON.stringify({ taskId, channelId, task_number }),
     })
+    const label = task_number ? `#${task_number}` : taskId?.slice(0, 8)
     return {
-      content: [{ type: 'text' as const, text: `#${task_number} unclaimed — now open.` }],
+      content: [{ type: 'text' as const, text: `${label} unclaimed — now open.` }],
     }
   },
 )
 
 server.tool(
   'update_task_status',
-  'Update a task\'s progress status. You must be the assignee. Valid statuses: todo, in_progress, in_review, done. Use in_review when your work is ready for human validation.',
+  'Update a task\'s progress status. You must be the assignee. Valid statuses: todo, in_progress, in_review, done. Use in_review when your work is ready for human validation. Use taskId or (channelId + task_number).',
   {
-    channelId: z.string().describe('The channel ID'),
-    task_number: z.number().describe('The task number to update'),
+    taskId: z.string().optional().describe('The task UUID to update'),
+    channelId: z.string().optional().describe('The channel ID (required with task_number)'),
+    task_number: z.number().optional().describe('The task number to update (required with channelId)'),
     status: z
       .enum(['todo', 'in_progress', 'in_review', 'done'])
       .describe('The new status'),
   },
-  async ({ channelId, task_number, status }) => {
+  async ({ taskId, channelId, task_number, status }) => {
     await internalFetch('/tasks/update-status', {
       method: 'POST',
-      body: JSON.stringify({ channelId, task_number, status }),
+      body: JSON.stringify({ taskId, channelId, task_number, status }),
     })
+    const label = task_number ? `#${task_number}` : taskId?.slice(0, 8)
     return {
       content: [
-        { type: 'text' as const, text: `#${task_number} moved to ${status.replace('_', ' ')}.` },
+        { type: 'text' as const, text: `${label} moved to ${status.replace('_', ' ')}.` },
       ],
     }
   },

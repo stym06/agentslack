@@ -121,6 +121,13 @@ export type ThreadParticipant = {
   joined_at: Date
 }
 
+// Agent activity event types (streamed from Claude Code process)
+export type AgentActivityEvent =
+  | { type: 'system'; subtype: string; mcpServers?: { name: string; status: string }[]; timestamp: number }
+  | { type: 'tool_use'; toolName: string; input: string; timestamp: number }
+  | { type: 'text'; text: string; timestamp: number }
+  | { type: 'result'; subtype: string; durationMs: number; totalCostUsd: number | null; timestamp: number }
+
 // Socket.io event types
 export type SocketEvents = {
   'message:new': (message: Message) => void
@@ -144,4 +151,5 @@ export type SocketEvents = {
   'project:deleted': (data: { project_id: string; channel_id: string }) => void
   'session:started': (session: AgentSession) => void
   'session:stopped': (data: { session_id: string; agent_id: string; task_id: string }) => void
+  'agent:activity': (data: { agent_id: string; event: AgentActivityEvent }) => void
 }
