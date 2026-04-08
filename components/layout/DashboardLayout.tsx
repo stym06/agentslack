@@ -71,14 +71,19 @@ export function DashboardLayout() {
   const [channels, setChannels] = useState<Channel[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    if (typeof window === 'undefined') return []
+  const [notifications, setNotifications] = useState<Notification[]>([])
+
+  // Hydrate from localStorage after mount to avoid SSR mismatch
+  useEffect(() => {
     try {
       const stored = localStorage.getItem('agentslack:notifications')
-      if (!stored) return []
-      return JSON.parse(stored).map((n: any) => ({ ...n, timestamp: new Date(n.timestamp) }))
-    } catch { return [] }
-  })
+      if (!stored) return
+      const parsed = JSON.parse(stored).map((n: any) => ({ ...n, timestamp: new Date(n.timestamp) }))
+      const seen = new Set<string>()
+      const deduped = parsed.filter((n: any) => { if (seen.has(n.id)) return false; seen.add(n.id); return true })
+      setNotifications(deduped)
+    } catch {}
+  }, [])
 
   // Persist to localStorage on change
   useEffect(() => {
@@ -146,7 +151,10 @@ export function DashboardLayout() {
         threadId: threadId ?? msg.id,
         messageId: msg.id,
       }
-      setNotifications((prev) => [notif, ...prev].slice(0, 50))
+      setNotifications((prev) => {
+        if (prev.some((n) => n.id === notif.id)) return prev
+        return [notif, ...prev].slice(0, 50)
+      })
       playChime()
 
       // If this is a reply in a task thread, look up the task ID asynchronously

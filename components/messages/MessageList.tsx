@@ -176,6 +176,7 @@ export function MessageList({
               <Message
                 key={msg.id}
                 id={msg.id}
+                channelId={channelId!}
                 senderType={msg.senderType}
                 senderId={msg.senderId}
                 authorName={msg.sender_name}
@@ -197,6 +198,15 @@ export function MessageList({
                       }
                     : null
                 }
+                onTaskCreated={(task) => {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === msg.id
+                        ? { ...m, task: { taskNumber: task.task_number, status: task.status, title: task.title } }
+                        : m,
+                    ),
+                  )
+                }}
                 isSystem={isSystem}
                 onOpenTaskByNumber={isSystem ? async (taskNumber: number) => {
                   try {

@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, ArrowRight, ChevronDown, MessageSquare, GitBranch } from 'lucide-react'
+import { Plus, ArrowRight, ChevronDown, MessageSquare, GitBranch, FolderGit2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Task, TaskGroup } from '@/types'
+import type { Task, TaskGroup, Project } from '@/types'
 import { useSocket } from '@/lib/socket/useSocket'
 import { AssignAgentDropdown } from './AssignAgentDropdown'
 
@@ -193,6 +193,10 @@ export function TaskList({ channelId, onOpenTask, onOpenTaskThread, onOpenTaskDe
   const [showCreate, setShowCreate] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [creating, setCreating] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [projectsLoaded, setProjectsLoaded] = useState(false)
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false)
   const [expandedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const { socket } = useSocket()
 
@@ -274,19 +278,32 @@ export function TaskList({ channelId, onOpenTask, onOpenTaskThread, onOpenTaskDe
     }
   }, [socket, channelId])
 
+  // Load projects when create form is shown
+  useEffect(() => {
+    if (!showCreate || projectsLoaded) return
+    fetch('/api/projects')
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => {
+        setProjects((Array.isArray(data) ? data : []).filter((p: Project) => p.status === 'active'))
+        setProjectsLoaded(true)
+      })
+      .catch(() => setProjectsLoaded(true))
+  }, [showCreate, projectsLoaded])
+
   const handleCreate = async () => {
-    if (!newTitle.trim()) return
+    if (!newTitle.trim() || !selectedProject) return
     setCreating(true)
     try {
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel_id: channelId, title: newTitle.trim() }),
+        body: JSON.stringify({ channel_id: channelId, title: newTitle.trim(), project_id: selectedProject.id }),
       })
       if (res.ok) {
         const task = await res.json()
         setTasks((prev) => [...prev, task])
         setNewTitle('')
+        setSelectedProject(null)
         setShowCreate(false)
         onOpenTask?.(task.message_id)
       }
@@ -353,32 +370,80 @@ export function TaskList({ channelId, onOpenTask, onOpenTaskThread, onOpenTaskDe
 
       {/* Create task inline */}
       {showCreate && (
-        <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-3">
-          <input
-            type="text"
-            autoFocus
-            placeholder="Task title..."
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreate()
-              if (e.key === 'Escape') setShowCreate(false)
-            }}
-            className="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <button
-            onClick={handleCreate}
-            disabled={creating || !newTitle.trim()}
-            className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {creating ? 'Creating...' : 'Create'}
-          </button>
-          <button
-            onClick={() => setShowCreate(false)}
-            className="cursor-pointer rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-secondary"
-          >
-            Cancel
-          </button>
+        <div className="flex flex-col gap-2 border-b bg-muted/30 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              autoFocus
+              placeholder="Task title..."
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreate()
+                if (e.key === 'Escape') setShowCreate(false)
+              }}
+              className="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              onClick={handleCreate}
+              disabled={creating || !newTitle.trim() || !selectedProject}
+              className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creating ? 'Creating...' : 'Create'}
+            </button>
+            <button
+              onClick={() => { setShowCreate(false); setSelectedProject(null) }}
+              className="cursor-pointer rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+              className={cn(
+                'inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors',
+                selectedProject
+                  ? 'border-green-500/30 bg-green-500/10 text-green-400'
+                  : 'border-border bg-background text-muted-foreground hover:bg-accent',
+              )}
+            >
+              <FolderGit2 className="size-3" />
+              {selectedProject ? selectedProject.name : 'Select project...'}
+            </button>
+            {showProjectDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowProjectDropdown(false)} />
+                <div className="absolute left-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-md border bg-popover shadow-lg">
+                  <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Select project
+                  </div>
+                  {!projectsLoaded ? (
+                    <div className="px-3 py-3 text-xs text-muted-foreground">Loading...</div>
+                  ) : projects.length === 0 ? (
+                    <div className="px-3 py-3 text-xs text-muted-foreground">No active projects</div>
+                  ) : (
+                    projects.map((project) => (
+                      <button
+                        key={project.id}
+                        onClick={() => {
+                          setSelectedProject(project)
+                          setShowProjectDropdown(false)
+                        }}
+                        className={cn(
+                          'flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent',
+                          selectedProject?.id === project.id && 'bg-accent',
+                        )}
+                      >
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
+                        <span className="truncate">{project.name}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 

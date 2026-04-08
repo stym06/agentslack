@@ -9,8 +9,9 @@
  *   - check_messages: poll for new messages since last check
  *   - list_channels: list channels the agent belongs to
  *   - list_agents: list other agents in the workspace
+ *   - list_projects: list active projects
  *   - list_tasks: list tasks in a channel
- *   - create_tasks: create new task-messages
+ *   - create_tasks: create new task-messages (requires project_id)
  *   - claim_tasks: claim tasks for work
  *   - unclaim_task: release a task
  *   - update_task_status: update task progress
@@ -125,6 +126,28 @@ server.tool(
   },
 )
 
+// ── Project Tools ────────────────────────────────────────────────────────
+
+server.tool(
+  'list_projects',
+  'List all active projects. Returns each project\'s ID, name, repo path, and git URL. Use this to find the right project_id before creating tasks.',
+  {},
+  async () => {
+    const result = await internalFetch('/list-projects')
+    if (result.projects?.length > 0) {
+      const formatted = result.projects
+        .map((p: any) => `${p.name} — id=${p.id} repo=${p.repo_path}${p.git_url ? ` git=${p.git_url}` : ''}`)
+        .join('\n')
+      return {
+        content: [{ type: 'text' as const, text: `## Projects (${result.projects.length})\n\n${formatted}` }],
+      }
+    }
+    return {
+      content: [{ type: 'text' as const, text: 'No active projects.' }],
+    }
+  },
+)
+
 // ── Task Tools ───────────────────────────────────────────────────────────
 
 server.tool(
@@ -168,9 +191,10 @@ server.tool(
 
 server.tool(
   'create_tasks',
-  'Create one or more new task-messages in a channel. Creates messages and publishes them as tasks. When creating multiple tasks, provide a summary to group them under a topic/story. Does not claim the task for you — call claim_tasks afterward if you want to own it.',
+  'Create one or more new task-messages in a channel. Creates messages and publishes them as tasks. Requires a project_id — call list_projects first to find the right one. When creating multiple tasks, provide a summary to group them under a topic/story. Does not claim the task for you — call claim_tasks afterward if you want to own it.',
   {
     channelId: z.string().describe('The channel ID to create tasks in'),
+    projectId: z.string().describe('The project ID to associate tasks with. Call list_projects to find available projects.'),
     tasks: z
       .array(z.object({ title: z.string().describe('Task title') }))
       .describe('Array of tasks to create'),
@@ -179,10 +203,10 @@ server.tool(
       .optional()
       .describe('A short topic/story summary to group these tasks under (e.g. "Making Coffee", "Auth System Setup")'),
   },
-  async ({ channelId, tasks, summary }) => {
+  async ({ channelId, projectId, tasks, summary }) => {
     const result = await internalFetch('/tasks', {
       method: 'POST',
-      body: JSON.stringify({ channelId, tasks, summary }),
+      body: JSON.stringify({ channelId, projectId, tasks, summary }),
     })
     const created = result.tasks
       .map((t: any) => `#${t.taskNumber} msg=${t.messageId.slice(0, 8)} "${t.title}"`)

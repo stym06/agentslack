@@ -199,3 +199,14 @@ model AgentSession {
   @@index([agentId, status], name: "idx_sessions_agent_status")
   @@map("agent_sessions")
 }
+
+model ActivityEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentId   String   @map("agent_id") @db.Uuid
+  type      String
+  payload   Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([agentId, createdAt], name: "idx_activity_agent_created")
+  @@map("activity_events")
+}

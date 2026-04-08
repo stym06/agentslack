@@ -40,7 +40,10 @@ export function Sidebar({
   const [showChannelModal, setShowChannelModal] = useState(false)
   const [channelsOpen, setChannelsOpen] = useState(true)
   const [agentsOpen, setAgentsOpen] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const { socket } = useSocket()
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!socket) return
@@ -114,7 +117,7 @@ export function Sidebar({
           <span>Notifications</span>
           {(() => {
             const unread = notifications.filter((n) => !n.read).length
-            return unread > 0 ? (
+            return mounted && unread > 0 ? (
               <span className="ml-auto flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                 {unread > 9 ? '9+' : unread}
               </span>

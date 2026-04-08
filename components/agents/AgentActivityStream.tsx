@@ -13,15 +13,19 @@ function formatTime(ts: number) {
 }
 
 function EventRow({ event }: { event: AgentActivityEvent }) {
+  const [expanded, setExpanded] = useState(false)
   const time = <span className="shrink-0 text-muted-foreground/50">{formatTime(event.timestamp)}</span>
 
   switch (event.type) {
     case 'system':
       return (
-        <div className="flex gap-2">
+        <div
+          className="flex cursor-pointer gap-2 rounded px-1 -mx-1 hover:bg-muted/50"
+          onClick={() => setExpanded((v) => !v)}
+        >
           {time}
           <span className="rounded bg-muted px-1 text-muted-foreground">[SYS]</span>
-          <span className="text-muted-foreground">
+          <span className={cn('text-muted-foreground', !expanded && 'truncate')}>
             {event.subtype}
             {event.mcpServers && (
               <span className="ml-1 text-muted-foreground/60">
@@ -34,19 +38,29 @@ function EventRow({ event }: { event: AgentActivityEvent }) {
 
     case 'tool_use':
       return (
-        <div className="flex gap-2">
+        <div
+          className="flex cursor-pointer gap-2 rounded px-1 -mx-1 hover:bg-muted/50"
+          onClick={() => setExpanded((v) => !v)}
+        >
           {time}
-          <span className="text-blue-400">{'>'}</span>
-          <span className="font-semibold text-blue-400">{event.toolName}</span>
-          <span className="truncate text-muted-foreground/60">{event.input}</span>
+          <span className="shrink-0 text-blue-400">{'>'}</span>
+          <span className="shrink-0 font-semibold text-blue-400">{event.toolName}</span>
+          <span className={cn('text-muted-foreground/60', expanded ? 'whitespace-pre-wrap break-all' : 'truncate')}>
+            {event.input}
+          </span>
         </div>
       )
 
     case 'text':
       return (
-        <div className="flex gap-2">
+        <div
+          className="flex cursor-pointer gap-2 rounded px-1 -mx-1 hover:bg-muted/50"
+          onClick={() => setExpanded((v) => !v)}
+        >
           {time}
-          <span className="text-foreground/80">{event.text}</span>
+          <span className={cn('text-foreground/80', expanded ? 'whitespace-pre-wrap break-all' : 'truncate')}>
+            {event.text}
+          </span>
         </div>
       )
 

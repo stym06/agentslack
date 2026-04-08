@@ -35,10 +35,20 @@ export async function POST(
 ) {
   const { agentId } = await params
   const body = await req.json()
-  const { channelId, tasks: taskDefs, summary } = body
+  const { channelId, projectId, tasks: taskDefs, summary } = body
 
   if (!channelId || !taskDefs?.length) {
     return NextResponse.json({ error: 'channelId and tasks required' }, { status: 400 })
+  }
+
+  if (!projectId) {
+    return NextResponse.json({ error: 'projectId is required. Call list_projects to find available projects.' }, { status: 400 })
+  }
+
+  // Verify project exists and is active
+  const project = await db.project.findFirst({ where: { id: projectId, status: 'active' } })
+  if (!project) {
+    return NextResponse.json({ error: 'Project not found or not active' }, { status: 404 })
   }
 
   const agent = await db.agent.findUnique({
@@ -81,6 +91,7 @@ export async function POST(
     const task = await db.task.create({
       data: {
         channelId,
+        projectId,
         groupId,
         messageId: message.id,
         taskNumber,

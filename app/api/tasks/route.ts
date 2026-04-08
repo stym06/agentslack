@@ -58,29 +58,51 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { channel_id, title, group_id } = body
+  const { channel_id, title, group_id, project_id, message_id } = body
 
   if (!channel_id || !title) {
     return NextResponse.json({ error: 'channel_id and title required' }, { status: 400 })
   }
 
+  if (!project_id) {
+    return NextResponse.json({ error: 'project_id is required' }, { status: 400 })
+  }
+
+  // Verify project exists
+  const project = await db.project.findFirst({ where: { id: project_id, status: 'active' } })
+  if (!project) {
+    return NextResponse.json({ error: 'Project not found or not active' }, { status: 404 })
+  }
+
   const taskNumber = await getNextTaskNumber(channel_id)
 
-  const message = await db.message.create({
-    data: {
-      channelId: channel_id,
-      senderType: 'user',
-      senderId: session.user.id,
-      content: title,
-      metadata: { isTask: true },
-    },
-  })
+  // Reuse existing message if provided, otherwise create one
+  let messageId: string
+  if (message_id) {
+    const existing = await db.message.findUnique({ where: { id: message_id } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+    }
+    messageId = existing.id
+  } else {
+    const message = await db.message.create({
+      data: {
+        channelId: channel_id,
+        senderType: 'user',
+        senderId: session.user.id,
+        content: title,
+        metadata: { isTask: true },
+      },
+    })
+    messageId = message.id
+  }
 
   const task = await db.task.create({
     data: {
       channelId: channel_id,
+      projectId: project_id,
       groupId: group_id || null,
-      messageId: message.id,
+      messageId,
       taskNumber,
       title,
       status: 'todo',

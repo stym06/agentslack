@@ -10,6 +10,21 @@ export function useAgentActivity(agentId: string) {
   const { socket, isConnected } = useSocket()
   const [events, setEvents] = useState<AgentActivityEvent[]>([])
 
+  // Load historical events from DB on mount
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/agents/${agentId}/activity?limit=${MAX_EVENTS}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.events?.length) {
+          setEvents(data.events)
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [agentId])
+
+  // Subscribe to live events via socket
   useEffect(() => {
     if (!isConnected) return
     socket.emit('agent:join', agentId)

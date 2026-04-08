@@ -8,6 +8,7 @@ import { initSocketServer, getIO } from './server/socket-server'
 import { startStandupCron } from './lib/cron/standup'
 import { createAgentDaemon, AgentConfig } from './server/agent-daemon'
 import { ensureAgentDir } from './lib/agents/directory'
+import { saveActivityEvent, purgeOldActivityEvents } from './lib/activity/store'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -79,11 +80,26 @@ app.prepare().then(async () => {
 
       daemon.setActivityCallback((agentId, event) => {
         const io = getIO()
-        io.to(`agent:${agentId}`).emit('agent:activity' as any, { agent_id: agentId, event })
+        const room = `agent:${agentId}`
+        console.log(`[Activity] Emitting ${event.type} to room ${room}`)
+        io.to(room).emit('agent:activity' as any, { agent_id: agentId, event })
+        // Persist to DB (fire-and-forget)
+        saveActivityEvent(agentId, event)
       })
 
       daemon.startAll(agentConfigs)
       console.log(`> Agent daemon started with ${agentConfigs.length} agent(s)`)
+
+      // Purge old activity events every hour (72h TTL)
+      const PURGE_INTERVAL_MS = 60 * 60 * 1000
+      setInterval(async () => {
+        try {
+          const count = await purgeOldActivityEvents(72)
+          if (count > 0) console.log(`[Activity] Purged ${count} events older than 72h`)
+        } catch (err) {
+          console.error('[Activity] Purge failed:', err)
+        }
+      }, PURGE_INTERVAL_MS)
     } catch (err) {
       console.error('Failed to start agent daemon:', err)
     }

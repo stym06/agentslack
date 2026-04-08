@@ -153,6 +153,7 @@ export function ThreadPanel({
         <>
           <Message
             id={parentMessage.id}
+            channelId={channelId}
             senderType={parentMessage.senderType}
             senderId={parentMessage.senderId}
             authorName={parentMessage.sender_name}
@@ -179,6 +180,7 @@ export function ThreadPanel({
           <Message
             key={reply.id}
             id={reply.id}
+            channelId={channelId}
             senderType={reply.senderType}
             senderId={reply.senderId}
             authorName={reply.sender_name}

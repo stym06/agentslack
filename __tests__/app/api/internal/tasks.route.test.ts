@@ -9,6 +9,7 @@ const { mockDb, mockIO, mockGetNextTaskNumber, mockEnrichTask, mockEmitTaskSyste
       task: { findMany: vi.fn(), create: vi.fn() },
       taskGroup: { create: vi.fn() },
       message: { create: vi.fn() },
+      project: { findFirst: vi.fn() },
     },
     mockIO: { to: mockTo, emit: mockEmit, _toEmit: mockEmit },
     mockGetNextTaskNumber: vi.fn().mockResolvedValue(1),
@@ -120,7 +121,24 @@ describe('POST /api/internal/agent/[agentId]/tasks', () => {
     expect(res.status).toBe(400)
   })
 
+  it('returns 400 when projectId is missing', async () => {
+    const req = makePostRequest({ channelId: 'ch-1', tasks: [{ title: 'Task' }] })
+    const res = await POST(req, { params: Promise.resolve({ agentId: 'agent-1' }) })
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'projectId is required. Call list_projects to find available projects.' })
+  })
+
+  it('returns 404 when project not found', async () => {
+    mockDb.project.findFirst.mockResolvedValue(null)
+
+    const req = makePostRequest({ channelId: 'ch-1', projectId: 'bad-id', tasks: [{ title: 'Task' }] })
+    const res = await POST(req, { params: Promise.resolve({ agentId: 'agent-1' }) })
+    expect(res.status).toBe(404)
+    expect(await res.json()).toEqual({ error: 'Project not found or not active' })
+  })
+
   it('creates a single task without task group', async () => {
+    mockDb.project.findFirst.mockResolvedValue({ id: 'proj-1', status: 'active' })
     mockDb.agent.findUnique.mockResolvedValue({ name: 'TestBot' })
     mockDb.message.create.mockResolvedValue({ id: 'msg-1' })
     mockDb.task.create.mockResolvedValue({
@@ -128,7 +146,7 @@ describe('POST /api/internal/agent/[agentId]/tasks', () => {
     })
     mockGetNextTaskNumber.mockResolvedValue(1)
 
-    const req = makePostRequest({ channelId: 'ch-1', tasks: [{ title: 'Do thing' }] })
+    const req = makePostRequest({ channelId: 'ch-1', projectId: 'proj-1', tasks: [{ title: 'Do thing' }] })
     const res = await POST(req, { params: Promise.resolve({ agentId: 'agent-1' }) })
 
     expect(res.status).toBe(200)
@@ -138,9 +156,15 @@ describe('POST /api/internal/agent/[agentId]/tasks', () => {
 
     // No task group for single task without summary
     expect(mockDb.taskGroup.create).not.toHaveBeenCalled()
+
+    // Verify projectId is passed to task creation
+    expect(mockDb.task.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ projectId: 'proj-1' }),
+    })
   })
 
   it('creates task group when multiple tasks', async () => {
+    mockDb.project.findFirst.mockResolvedValue({ id: 'proj-1', status: 'active' })
     mockDb.agent.findUnique.mockResolvedValue({ name: 'TestBot' })
     mockDb.taskGroup.create.mockResolvedValue({ id: 'group-1' })
     mockDb.message.create.mockResolvedValueOnce({ id: 'msg-1' }).mockResolvedValueOnce({ id: 'msg-2' })
@@ -149,7 +173,7 @@ describe('POST /api/internal/agent/[agentId]/tasks', () => {
       .mockResolvedValueOnce({ id: 't2', channelId: 'ch-1', taskNumber: 2, title: 'Task B', status: 'todo', messageId: 'msg-2' })
     mockGetNextTaskNumber.mockResolvedValueOnce(1).mockResolvedValueOnce(2)
 
-    const req = makePostRequest({ channelId: 'ch-1', tasks: [{ title: 'Task A' }, { title: 'Task B' }] })
+    const req = makePostRequest({ channelId: 'ch-1', projectId: 'proj-1', tasks: [{ title: 'Task A' }, { title: 'Task B' }] })
     const res = await POST(req, { params: Promise.resolve({ agentId: 'agent-1' }) })
 
     expect(mockDb.taskGroup.create).toHaveBeenCalledWith({
@@ -164,6 +188,7 @@ describe('POST /api/internal/agent/[agentId]/tasks', () => {
   })
 
   it('creates task group when summary is provided even for single task', async () => {
+    mockDb.project.findFirst.mockResolvedValue({ id: 'proj-1', status: 'active' })
     mockDb.agent.findUnique.mockResolvedValue({ name: 'TestBot' })
     mockDb.taskGroup.create.mockResolvedValue({ id: 'group-1' })
     mockDb.message.create.mockResolvedValue({ id: 'msg-1' })
@@ -171,7 +196,7 @@ describe('POST /api/internal/agent/[agentId]/tasks', () => {
       id: 't1', channelId: 'ch-1', taskNumber: 1, title: 'Fix bug', status: 'todo', messageId: 'msg-1',
     })
 
-    const req = makePostRequest({ channelId: 'ch-1', tasks: [{ title: 'Fix bug' }], summary: 'Bugfix batch' })
+    const req = makePostRequest({ channelId: 'ch-1', projectId: 'proj-1', tasks: [{ title: 'Fix bug' }], summary: 'Bugfix batch' })
     await POST(req, { params: Promise.resolve({ agentId: 'agent-1' }) })
 
     expect(mockDb.taskGroup.create).toHaveBeenCalledWith({
@@ -180,13 +205,14 @@ describe('POST /api/internal/agent/[agentId]/tasks', () => {
   })
 
   it('emits task:created for each task', async () => {
+    mockDb.project.findFirst.mockResolvedValue({ id: 'proj-1', status: 'active' })
     mockDb.agent.findUnique.mockResolvedValue({ name: 'TestBot' })
     mockDb.message.create.mockResolvedValue({ id: 'msg-1' })
     mockDb.task.create.mockResolvedValue({
       id: 't1', channelId: 'ch-1', taskNumber: 1, title: 'Task', status: 'todo', messageId: 'msg-1',
     })
 
-    const req = makePostRequest({ channelId: 'ch-1', tasks: [{ title: 'Task' }] })
+    const req = makePostRequest({ channelId: 'ch-1', projectId: 'proj-1', tasks: [{ title: 'Task' }] })
     await POST(req, { params: Promise.resolve({ agentId: 'agent-1' }) })
 
     expect(mockIO.to).toHaveBeenCalledWith('channel:ch-1')

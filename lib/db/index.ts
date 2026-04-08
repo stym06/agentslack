@@ -2,8 +2,10 @@ import { PrismaClient } from '@/lib/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 
-// Hardcode fallback to prevent connecting to wrong DB when env isn't loaded
-const connectionString = process.env.DATABASE_URL || 'postgresql://stym06@localhost:5432/agentslack'
+const connectionString = process.env.DATABASE_URL
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is required. See .env.example for setup.')
+}
 
 function createPrismaClient(): PrismaClient {
   const pool = new pg.Pool({ connectionString })

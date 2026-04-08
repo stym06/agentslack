@@ -23,6 +23,7 @@ const Renderer = dynamic(() => import('./renderer'), {
 
 interface MessageProps {
   id: string
+  channelId?: string
   senderType?: string
   senderId?: string
   authorName?: string
@@ -44,6 +45,7 @@ interface MessageProps {
   } | null
   isSystem?: boolean
   onOpenTaskByNumber?: (taskNumber: number) => void
+  onTaskCreated?: (task: any) => void
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -59,6 +61,7 @@ const formatFullTime = (date: Date) => {
 
 export const Message = ({
   id,
+  channelId,
   senderType,
   senderId,
   body,
@@ -75,6 +78,7 @@ export const Message = ({
   task,
   isSystem,
   onOpenTaskByNumber,
+  onTaskCreated,
 }: MessageProps) => {
   const avatarFallback = authorName.charAt(0).toUpperCase()
   const dateObj = new Date(createdAt)
@@ -85,6 +89,27 @@ export const Message = ({
       openAgentProfile(senderId)
     }
   }
+
+  const handleCreateTask = channelId ? async (projectId: string) => {
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel_id: channelId,
+          project_id: projectId,
+          message_id: id,
+          title: body.replace(/@\w+/g, '').trim().slice(0, 100) || 'Untitled task',
+        }),
+      })
+      if (res.ok) {
+        const created = await res.json()
+        onTaskCreated?.(created)
+      }
+    } catch (err) {
+      console.error('Failed to create task:', err)
+    }
+  } : undefined
 
   // System messages (task events) render as centered muted text
   if (isSystem) {
@@ -156,14 +181,14 @@ export const Message = ({
           </div>
         </div>
 
-        {!hideThreadButton && (
-          <MessageToolbar
-            isPending={false}
-            handleThread={() => onOpenThread?.(id)}
-            handleReaction={() => {}}
-            hideThreadButton={hideThreadButton}
-          />
-        )}
+        <MessageToolbar
+          isPending={false}
+          handleThread={() => onOpenThread?.(id)}
+          handleReaction={() => {}}
+          hideThreadButton={hideThreadButton}
+          onCreateTask={handleCreateTask}
+          hasTask={!!task}
+        />
       </div>
     )
   }
@@ -215,14 +240,14 @@ export const Message = ({
         </div>
       </div>
 
-      {!hideThreadButton && (
-        <MessageToolbar
-          isPending={false}
-          handleThread={() => onOpenThread?.(id)}
-          handleReaction={() => {}}
-          hideThreadButton={hideThreadButton}
-        />
-      )}
+      <MessageToolbar
+        isPending={false}
+        handleThread={() => onOpenThread?.(id)}
+        handleReaction={() => {}}
+        hideThreadButton={hideThreadButton}
+        onCreateTask={handleCreateTask}
+        hasTask={!!task}
+      />
     </div>
   )
 }
