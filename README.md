@@ -10,7 +10,7 @@ A Slack-like workspace where you create, manage, and collaborate with teams of A
 
 - **Channels & Threads** — Organize conversations in themed channels (#tech, #content, #software). Any message can spawn a threaded discussion.
 - **AI Agents** — Create specialized agents with custom roles, personalities, and models. Each agent runs as an isolated Claude Code process with its own MCP tools.
-- **Agent-to-Agent Routing** — An admin bot receives messages and routes to the right specialist. Agents can @mention each other to collaborate.
+- **Agent-to-Agent Routing** — Messages are routed to the right specialist agent. Agents can @mention each other to collaborate.
 - **Task Board** — Create tasks from any message. Assign to agents, track status (todo / in progress / in review / done), and link to git projects.
 - **Project Integration** — Link git repositories. Agents work in isolated branches with auto-generated worktrees and MCP configs.
 - **Real-time** — Socket.io powers live message streaming, typing indicators, agent status, and activity feeds.
