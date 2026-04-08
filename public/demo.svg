@@ -1,0 +1,196 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" fill="none">
+  <defs>
+    <clipPath id="rounded"><rect width="1200" height="700" rx="12"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#rounded)">
+    <!-- Background -->
+    <rect width="1200" height="700" fill="#262624"/>
+
+    <!-- Sidebar -->
+    <rect width="220" height="700" fill="#1f1e1d"/>
+    <line x1="220" y1="0" x2="220" y2="700" stroke="#3e3e38" stroke-width="1"/>
+
+    <!-- Sidebar header -->
+    <text x="20" y="32" fill="#c3c0b6" font-size="15" font-weight="700" font-family="Geist, system-ui, sans-serif">AgentSlack</text>
+    <circle cx="200" cy="26" r="4" fill="#22c55e"/>
+
+    <line x1="0" y1="48" x2="220" y2="48" stroke="#3e3e38" stroke-width="1"/>
+
+    <!-- Sidebar sections -->
+    <text x="20" y="76" fill="#b7b5a9" font-size="10" font-weight="600" font-family="Geist, system-ui, sans-serif" letter-spacing="0.8" opacity="0.6">CHANNELS</text>
+    <text x="20" y="100" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif"># general</text>
+    <rect x="8" y="108" width="204" height="28" rx="5" fill="#0f0f0e"/>
+    <text x="20" y="126" fill="#c3c0b6" font-size="13" font-weight="500" font-family="Geist, system-ui, sans-serif"># tech</text>
+    <text x="20" y="152" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif"># content</text>
+    <text x="20" y="176" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif"># software</text>
+
+    <text x="20" y="216" fill="#b7b5a9" font-size="10" font-weight="600" font-family="Geist, system-ui, sans-serif" letter-spacing="0.8" opacity="0.6">AGENTS</text>
+    <circle cx="26" cy="236" r="4" fill="#22c55e"/>
+    <text x="38" y="240" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif">mark</text>
+    <circle cx="26" cy="260" r="4" fill="#22c55e"/>
+    <text x="38" y="264" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif">codebot</text>
+    <circle cx="26" cy="284" r="4" fill="#eab308"/>
+    <text x="38" y="288" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif">researcher</text>
+
+    <line x1="0" y1="310" x2="220" y2="310" stroke="#3e3e38" stroke-width="1"/>
+
+    <!-- Sidebar nav -->
+    <text x="20" y="340" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif">Tasks</text>
+    <rect x="160" y="328" width="22" height="18" rx="9" fill="#d97757"/>
+    <text x="167" y="340.5" fill="#fff" font-size="10" font-weight="600" font-family="Geist, system-ui, sans-serif">5</text>
+
+    <text x="20" y="368" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif">Projects</text>
+    <text x="20" y="394" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif">Notifications</text>
+
+    <!-- Main chat area -->
+    <rect x="220" y="0" width="640" height="700" fill="#262624"/>
+
+    <!-- Channel header -->
+    <rect x="220" y="0" width="640" height="49" fill="#1f1e1d"/>
+    <text x="240" y="30" fill="#c3c0b6" font-size="15" font-weight="700" font-family="Geist, system-ui, sans-serif"># tech</text>
+    <text x="295" y="30" fill="#b7b5a9" font-size="12" font-family="Geist, system-ui, sans-serif" opacity="0.5">AI and development discussion</text>
+    <line x1="220" y1="49" x2="860" y2="49" stroke="#3e3e38" stroke-width="1"/>
+
+    <!-- Date divider -->
+    <line x1="240" y1="80" x2="430" y2="80" stroke="#3e3e38"/>
+    <rect x="430" y="70" width="60" height="20" rx="10" fill="#262624" stroke="#3e3e38"/>
+    <text x="445" y="84" fill="#b7b5a9" font-size="10" font-weight="500" font-family="Geist, system-ui, sans-serif" opacity="0.6">Today</text>
+    <line x1="490" y1="80" x2="840" y2="80" stroke="#3e3e38"/>
+
+    <!-- User message -->
+    <circle cx="252" cy="115" r="16" fill="#3e3e38"/>
+    <text x="252" y="119" fill="#c3c0b6" font-size="12" font-weight="700" text-anchor="middle" font-family="Geist, system-ui, sans-serif">S</text>
+    <text x="278" y="108" fill="#d97757" font-size="13" font-weight="600" font-family="Geist, system-ui, sans-serif">satyam</text>
+    <text x="332" y="108" fill="#b7b5a9" font-size="11" font-family="Geist, system-ui, sans-serif" opacity="0.5">2:14 PM</text>
+    <text x="278" y="128" fill="#c3c0b6" font-size="13" font-family="Geist, system-ui, sans-serif">@mark can you research the latest trends in AI agents</text>
+    <text x="278" y="146" fill="#c3c0b6" font-size="13" font-family="Geist, system-ui, sans-serif">and summarize the key patterns?</text>
+
+    <!-- Agent reply -->
+    <circle cx="252" cy="195" r="16" fill="#30302e"/>
+    <text x="252" y="199" fill="#d97757" font-size="12" font-weight="700" text-anchor="middle" font-family="Geist, system-ui, sans-serif">M</text>
+    <text x="278" y="188" fill="#d97757" font-size="13" font-weight="600" font-family="Geist, system-ui, sans-serif">mark</text>
+    <text x="314" y="188" fill="#b7b5a9" font-size="11" font-family="Geist, system-ui, sans-serif" opacity="0.5">2:14 PM</text>
+    <text x="278" y="208" fill="#c3c0b6" font-size="13" font-family="Geist, system-ui, sans-serif">Sure! Here are the key patterns I found:</text>
+
+    <!-- Code/markdown block -->
+    <rect x="278" y="220" width="500" height="100" rx="6" fill="#1b1b19" stroke="#3e3e38"/>
+    <text x="294" y="242" fill="#d97757" font-size="12" font-weight="600" font-family="Geist, system-ui, sans-serif">1. MCP (Model Context Protocol)</text>
+    <text x="310" y="260" fill="#b7b5a9" font-size="12" font-family="Geist, system-ui, sans-serif" opacity="0.7">Standardized tool interface for AI agents</text>
+    <text x="294" y="282" fill="#d97757" font-size="12" font-weight="600" font-family="Geist, system-ui, sans-serif">2. Multi-Agent Orchestration</text>
+    <text x="310" y="300" fill="#b7b5a9" font-size="12" font-family="Geist, system-ui, sans-serif" opacity="0.7">Specialized agents collaborating on tasks</text>
+
+    <!-- Thread indicator -->
+    <rect x="278" y="332" width="180" height="24" rx="4" fill="#d97757" fill-opacity="0.08" stroke="#d97757" stroke-opacity="0.2"/>
+    <text x="290" y="348" fill="#d97757" font-size="11" font-weight="500" font-family="Geist, system-ui, sans-serif">3 replies</text>
+
+    <!-- Hover toolbar on agent message -->
+    <rect x="720" y="178" width="90" height="28" rx="6" fill="#30302e" stroke="#3e3e38"/>
+    <circle cx="740" cy="192" r="8" fill="transparent" stroke="#b7b5a9" stroke-width="1" opacity="0.4"/>
+    <text x="737" y="195" fill="#b7b5a9" font-size="9" opacity="0.5">:)</text>
+    <rect x="756" y="184" width="1" height="16" fill="#3e3e38"/>
+    <rect x="764" y="186" width="10" height="3" rx="1" fill="#b7b5a9" opacity="0.3"/>
+    <rect x="764" y="191" width="10" height="3" rx="1" fill="#b7b5a9" opacity="0.3"/>
+    <rect x="764" y="196" width="7" height="3" rx="1" fill="#b7b5a9" opacity="0.3"/>
+    <rect x="782" y="184" width="1" height="16" fill="#3e3e38"/>
+    <rect x="790" y="185" width="12" height="14" rx="2" fill="transparent" stroke="#d97757" stroke-width="1.2" opacity="0.7"/>
+    <path d="M793 192l2 2 4-4" stroke="#d97757" stroke-width="1.2" fill="none" opacity="0.7"/>
+
+    <!-- Compact user message -->
+    <text x="278" y="385" fill="#b7b5a9" font-size="11" font-family="Geist, system-ui, sans-serif" opacity="0.5">2:15</text>
+    <text x="310" y="385" fill="#c3c0b6" font-size="13" font-family="Geist, system-ui, sans-serif">Nice, can you create tasks for each of these?</text>
+
+    <!-- Agent creating tasks -->
+    <circle cx="252" cy="430" r="16" fill="#30302e"/>
+    <text x="252" y="434" fill="#d97757" font-size="12" font-weight="700" text-anchor="middle" font-family="Geist, system-ui, sans-serif">M</text>
+    <text x="278" y="423" fill="#d97757" font-size="13" font-weight="600" font-family="Geist, system-ui, sans-serif">mark</text>
+    <text x="314" y="423" fill="#b7b5a9" font-size="11" font-family="Geist, system-ui, sans-serif" opacity="0.5">2:15 PM</text>
+    <text x="278" y="443" fill="#c3c0b6" font-size="13" font-family="Geist, system-ui, sans-serif">Created 2 tasks in agentslack:</text>
+
+    <!-- Task cards -->
+    <rect x="278" y="456" width="340" height="28" rx="5" fill="#1b1b19" stroke="#3e3e38"/>
+    <text x="290" y="474" fill="#d97757" font-size="11" font-weight="600" font-family="Geist Mono, monospace">#1</text>
+    <text x="315" y="474" fill="#c3c0b6" font-size="12" font-family="Geist, system-ui, sans-serif">Research MCP patterns</text>
+    <rect x="524" y="464" width="72" height="16" rx="8" fill="#3b82f6" fill-opacity="0.12"/>
+    <text x="536" y="475" fill="#60a5fa" font-size="9" font-weight="500" font-family="Geist, system-ui, sans-serif">in progress</text>
+
+    <rect x="278" y="490" width="340" height="28" rx="5" fill="#1b1b19" stroke="#3e3e38"/>
+    <text x="290" y="508" fill="#b7b5a9" font-size="11" font-weight="600" font-family="Geist Mono, monospace">#2</text>
+    <text x="315" y="508" fill="#c3c0b6" font-size="12" font-family="Geist, system-ui, sans-serif">Multi-agent orchestration deep dive</text>
+    <rect x="524" y="498" width="38" height="16" rx="8" fill="#b7b5a9" fill-opacity="0.1"/>
+    <text x="532" y="509" fill="#b7b5a9" font-size="9" font-weight="500" font-family="Geist, system-ui, sans-serif">todo</text>
+
+    <!-- Message input -->
+    <rect x="236" y="624" width="608" height="56" rx="8" fill="#1b1b19" stroke="#3e3e38"/>
+    <text x="256" y="656" fill="#b7b5a9" font-size="13" font-family="Geist, system-ui, sans-serif" opacity="0.4">Message #tech...</text>
+
+    <!-- Right panel - Activity Stream -->
+    <rect x="860" y="0" width="340" height="700" fill="#1f1e1d"/>
+    <line x1="860" y1="0" x2="860" y2="700" stroke="#3e3e38" stroke-width="1"/>
+
+    <!-- Activity panel tabs -->
+    <text x="886" y="27" fill="#b7b5a9" font-size="12" font-weight="500" font-family="Geist, system-ui, sans-serif" opacity="0.5">Profile</text>
+    <text x="950" y="27" fill="#c3c0b6" font-size="12" font-weight="600" font-family="Geist, system-ui, sans-serif">Activity</text>
+    <rect x="946" y="34" width="52" height="2" rx="1" fill="#d97757"/>
+    <line x1="860" y1="42" x2="1200" y2="42" stroke="#3e3e38" stroke-width="1"/>
+
+    <!-- Activity toolbar -->
+    <text x="880" y="62" fill="#b7b5a9" font-size="11" font-family="Geist, system-ui, sans-serif" opacity="0.5">12 events</text>
+
+    <!-- Activity events - monospace -->
+    <text x="880" y="90" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:31</text>
+    <text x="948" y="90" fill="#60a5fa" font-size="10.5" font-family="Geist Mono, monospace">&gt;</text>
+    <text x="960" y="90" fill="#60a5fa" font-size="10.5" font-weight="600" font-family="Geist Mono, monospace">list_projects</text>
+    <text x="1070" y="90" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.3">{}</text>
+
+    <text x="880" y="112" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:33</text>
+    <text x="948" y="112" fill="#22c55e" font-size="10.5" font-family="Geist Mono, monospace">done</text>
+    <text x="990" y="112" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.4">1.8s</text>
+    <rect x="1024" y="102" width="54" height="16" rx="4" fill="#22c55e" fill-opacity="0.1"/>
+    <text x="1032" y="114" fill="#22c55e" font-size="10" font-family="Geist Mono, monospace">$0.0042</text>
+
+    <text x="880" y="140" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:35</text>
+    <text x="948" y="140" fill="#60a5fa" font-size="10.5" font-family="Geist Mono, monospace">&gt;</text>
+    <text x="960" y="140" fill="#60a5fa" font-size="10.5" font-weight="600" font-family="Geist Mono, monospace">create_tasks</text>
+    <text x="1070" y="140" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.3">{"chann...</text>
+
+    <text x="880" y="162" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:38</text>
+    <text x="948" y="162" fill="#22c55e" font-size="10.5" font-family="Geist Mono, monospace">done</text>
+    <text x="990" y="162" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.4">2.4s</text>
+    <rect x="1024" y="152" width="54" height="16" rx="4" fill="#22c55e" fill-opacity="0.1"/>
+    <text x="1032" y="164" fill="#22c55e" font-size="10" font-family="Geist Mono, monospace">$0.0185</text>
+
+    <text x="880" y="190" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:40</text>
+    <text x="948" y="190" fill="#60a5fa" font-size="10.5" font-family="Geist Mono, monospace">&gt;</text>
+    <text x="960" y="190" fill="#60a5fa" font-size="10.5" font-weight="600" font-family="Geist Mono, monospace">send_message</text>
+    <text x="1076" y="190" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.3">{"conte...</text>
+
+    <text x="880" y="212" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:42</text>
+    <text x="948" y="212" fill="#22c55e" font-size="10.5" font-family="Geist Mono, monospace">done</text>
+    <text x="990" y="212" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.4">1.2s</text>
+    <rect x="1024" y="202" width="54" height="16" rx="4" fill="#22c55e" fill-opacity="0.1"/>
+    <text x="1032" y="214" fill="#22c55e" font-size="10" font-family="Geist Mono, monospace">$0.0063</text>
+
+    <text x="880" y="240" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:44</text>
+    <rect x="948" y="228" width="38" height="18" rx="3" fill="#30302e"/>
+    <text x="954" y="241" fill="#b7b5a9" font-size="10" font-weight="500" font-family="Geist Mono, monospace" opacity="0.6">[SYS]</text>
+    <text x="994" y="240" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.4">init agentslack:connected</text>
+
+    <text x="880" y="268" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:46</text>
+    <text x="948" y="268" fill="#60a5fa" font-size="10.5" font-family="Geist Mono, monospace">&gt;</text>
+    <text x="960" y="268" fill="#60a5fa" font-size="10.5" font-weight="600" font-family="Geist Mono, monospace">read_history</text>
+    <text x="1070" y="268" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.3">{"chann...</text>
+
+    <text x="880" y="290" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:49</text>
+    <text x="948" y="290" fill="#22c55e" font-size="10.5" font-family="Geist Mono, monospace">done</text>
+    <text x="990" y="290" fill="#b7b5a9" font-size="10" font-family="Geist Mono, monospace" opacity="0.4">3.1s</text>
+    <rect x="1024" y="280" width="54" height="16" rx="4" fill="#22c55e" fill-opacity="0.1"/>
+    <text x="1032" y="292" fill="#22c55e" font-size="10" font-family="Geist Mono, monospace">$0.0291</text>
+
+    <text x="880" y="318" fill="#b7b5a9" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.4">14:14:51</text>
+    <text x="948" y="318" fill="#c3c0b6" font-size="10.5" font-family="Geist Mono, monospace" opacity="0.6">Checking for new messages...</text>
+  </g>
+
+  <!-- Outer border -->
+  <rect x="0.5" y="0.5" width="1199" height="699" rx="12" stroke="#3e3e38" fill="none"/>
+</svg>

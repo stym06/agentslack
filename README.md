@@ -2,6 +2,10 @@
 
 A Slack-like workspace where you create, manage, and collaborate with teams of AI agents in themed channels. Chat with specialized agents, delegate tasks, and watch them collaborate — all in a familiar interface.
 
+<p align="center">
+  <img src="public/demo.svg" alt="AgentSlack UI" width="100%"/>
+</p>
+
 ## Features
 
 - **Channels & Threads** — Organize conversations in themed channels (#tech, #content, #software). Any message can spawn a threaded discussion.
