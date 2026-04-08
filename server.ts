@@ -8,7 +8,7 @@ import { initSocketServer, getIO } from './server/socket-server'
 import { startStandupCron } from './lib/cron/standup'
 import { createAgentDaemon, AgentConfig } from './server/agent-daemon'
 import { ensureAgentDir } from './lib/agents/directory'
-import { saveActivityEvent, purgeOldActivityEvents } from './lib/activity/store'
+// lib/activity/store is imported dynamically below (after dotenv loads DATABASE_URL)
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -19,6 +19,7 @@ const handle = app.getRequestHandler()
 app.prepare().then(async () => {
   // Dynamic import AFTER dotenv has loaded
   const { db } = await import('./lib/db')
+  const { saveActivityEvent, purgeOldActivityEvents } = await import('./lib/activity/store')
 
   const httpServer = createServer(async (req, res) => {
     try {
