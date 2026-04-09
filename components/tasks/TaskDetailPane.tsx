@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { ArrowLeft, GitBranch, User, Bot, ChevronDown } from 'lucide-react'
+import { ArrowLeft, GitBranch, User, Bot, ChevronDown, X, Trash2 } from 'lucide-react'
+import { AssignAgentDropdown } from './AssignAgentDropdown'
 import { useSocket } from '@/lib/socket/useSocket'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -84,6 +85,60 @@ function TaskStatusDropdown({
                 {STATUS_LABELS[s]}
               </button>
             ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function DeleteTaskButton({ taskId, onDeleted }: { taskId: string; onDeleted: () => void }) {
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+      if (res.ok) onDeleted()
+    } catch (err) {
+      console.error('Failed to delete task:', err)
+    } finally {
+      setDeleting(false)
+      setShowConfirm(false)
+    }
+  }
+
+  return (
+    <div className="relative">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => setShowConfirm(true)}
+        className="text-muted-foreground hover:text-destructive"
+      >
+        <Trash2 className="size-4" />
+      </Button>
+      {showConfirm && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowConfirm(false)} />
+          <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-md border bg-popover p-3 shadow-lg">
+            <p className="text-xs font-medium">Delete this task?</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Task, thread, and session will be removed.</p>
+            <div className="mt-2.5 flex justify-end gap-1.5">
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowConfirm(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 text-xs"
+                disabled={deleting}
+                onClick={handleDelete}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
           </div>
         </>
       )}
@@ -270,6 +325,10 @@ export function TaskDetailPane({
           <span className="text-sm font-mono text-muted-foreground">#{task.task_number}</span>
           <h1 className="truncate text-lg font-bold">{task.title}</h1>
         </div>
+        <DeleteTaskButton taskId={task.id} onDeleted={onBack} />
+        <Button variant="ghost" size="icon-sm" onClick={onBack}>
+          <X className="size-4" />
+        </Button>
       </div>
 
       {/* Task meta bar */}
@@ -284,7 +343,20 @@ export function TaskDetailPane({
               {task.claimed_by_name}
             </span>
           ) : (
-            <span className="text-muted-foreground">Unassigned</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Unassigned</span>
+              <AssignAgentDropdown
+                taskId={task.id}
+                channelId={task.channel_id}
+                currentAgentId={task.claimed_by_id}
+                onAssigned={() => {
+                  fetch(`/api/tasks/${task.id}`)
+                    .then((r) => r.ok ? r.json() : null)
+                    .then((data) => { if (data) setTask(data) })
+                    .catch(() => {})
+                }}
+              />
+            </div>
           )}
         </div>
 
@@ -295,6 +367,13 @@ export function TaskDetailPane({
           </div>
         )}
       </div>
+
+      {/* Task body */}
+      {task.body && (
+        <div className="border-b px-4 py-3">
+          <p className="whitespace-pre-wrap text-sm text-foreground/80">{task.body}</p>
+        </div>
+      )}
 
       {/* Discussion */}
       <div ref={scrollContainerRef} className="messages-scrollbar flex flex-1 flex-col overflow-y-auto">

@@ -98,13 +98,19 @@ export function ThreadPanel({
       if (data.threadId === threadId) setRoutingAgent(data.agentName)
     }
 
+    const handleDeleted = (data: { id: string }) => {
+      setReplies((prev) => prev.filter((m) => m.id !== data.id))
+    }
+
     socket.on('message:new', handleNewMessage)
     socket.on('agent:routing', handleRouting)
+    socket.on('message:deleted', handleDeleted)
 
     return () => {
       socket.emit('thread:leave', threadId)
       socket.off('message:new', handleNewMessage)
       socket.off('agent:routing', handleRouting)
+      socket.off('message:deleted', handleDeleted)
     }
   }, [threadId, isConnected, socket])
 
@@ -188,6 +194,7 @@ export function ThreadPanel({
             body={reply.content}
             createdAt={reply.createdAt}
             hideThreadButton
+            onDelete={(msgId) => setReplies((prev) => prev.filter((m) => m.id !== msgId))}
           />
         ))}
 

@@ -44,6 +44,7 @@ function useViewState() {
     const h = params.highlight ?? null
 
     if (t) {
+      sp.set('view', 'tasks')
       sp.set('task', t)
       if (h) sp.set('highlight', h)
     } else {
@@ -219,7 +220,7 @@ export function DashboardLayout() {
   }, [navigate])
 
   const handleOpenTask = useCallback((taskId: string) => {
-    navigate({ task: taskId })
+    navigate({ task: taskId, view: 'tasks' })
     setSelectedAgentId(null)
   }, [navigate])
 
@@ -246,12 +247,12 @@ export function DashboardLayout() {
         <div className="w-60 shrink-0">
           <Sidebar
             activeChannelId={activeChannelId}
-            activeView={openTaskId ? 'tasks' : activeView}
+            activeView={activeView}
             onChannelSelect={handleChannelSelect}
             onViewSelect={(v) => navigate({ view: v, task: null })}
             onAgentSelect={(id) => {
               setSelectedAgentId((prev) => prev === id ? null : id)
-              if (openTaskId) navigate({ task: null, view: activeView })
+              if (openTaskId) navigate({ task: null })
             }}
             channels={channels}
             agents={agents}
@@ -260,10 +261,13 @@ export function DashboardLayout() {
           />
         </div>
         <div className="flex-1 min-w-0">
-          {openTaskId ? (
-            <TaskDetailPane taskId={openTaskId} onBack={handleTaskBack} highlightMessageId={highlightMessageId} />
-          ) : activeView === 'tasks' ? (
-            <GlobalTasksPane onOpenTask={handleOpenTask} />
+          {activeView === 'tasks' ? (
+            <GlobalTasksPane
+              onOpenTask={handleOpenTask}
+              openTaskId={openTaskId}
+              onTaskBack={handleTaskBack}
+              highlightMessageId={highlightMessageId}
+            />
           ) : activeView === 'projects' ? (
             <GlobalProjectsPane />
           ) : activeView === 'notifications' ? (

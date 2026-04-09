@@ -21,7 +21,7 @@ export async function POST(
 
   const { taskId } = await params
   const body = await req.json()
-  const { agent_id, project_id } = body
+  const { agent_id, project_id, dirty_strategy } = body
 
   if (!agent_id || !project_id) {
     return NextResponse.json(
@@ -67,12 +67,27 @@ export async function POST(
 
   // Set up worktree
   const agentInstructions = readAgentInstructions(agent.id)
-  const { worktreePath, branchName } = await setupTaskWorktree({
-    project: { id: project.id, repoPath: project.repoPath },
-    task: { id: task.id, taskNumber: task.taskNumber, title: task.title },
-    agentId: agent.id,
-    agentInstructions: agentInstructions || undefined,
-  })
+  let worktreePath: string
+  let branchName: string
+  try {
+    const result = await setupTaskWorktree({
+      project: { id: project.id, repoPath: project.repoPath },
+      task: { id: task.id, taskNumber: task.taskNumber, title: task.title },
+      agentId: agent.id,
+      agentInstructions: agentInstructions || undefined,
+      dirtyStrategy: dirty_strategy || undefined,
+    })
+    worktreePath = result.worktreePath
+    branchName = result.branchName
+  } catch (err: any) {
+    if (err.code === 'DIRTY_REPO') {
+      return NextResponse.json(
+        { error: 'dirty_repo', message: err.message, repo_path: err.repoPath },
+        { status: 409 },
+      )
+    }
+    throw err
+  }
 
   // Create session record
   const agentSession = await db.agentSession.create({

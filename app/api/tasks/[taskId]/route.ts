@@ -116,3 +116,32 @@ export async function PATCH(
 
   return NextResponse.json(enriched)
 }
+
+// DELETE /api/tasks/[taskId] — Delete a task
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ taskId: string }> },
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { taskId } = await params
+  const task = await db.task.findUnique({ where: { id: taskId } })
+  if (!task) {
+    return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+  }
+
+  // Delete sessions, thread participants, thread replies, task, then the backing message
+  await db.agentSession.deleteMany({ where: { taskId } })
+  await db.threadParticipant.deleteMany({ where: { threadId: task.messageId } })
+  await db.message.deleteMany({ where: { threadId: task.messageId } })
+  await db.task.delete({ where: { id: taskId } })
+  await db.message.delete({ where: { id: task.messageId } })
+
+  const io = getIO()
+  io.to(`channel:${task.channelId}`).emit('task:deleted' as any, { id: taskId })
+
+  return NextResponse.json({ success: true })
+}

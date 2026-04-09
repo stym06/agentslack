@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
+import { getIO } from '@/server/socket-server'
 
 export async function GET(
   req: NextRequest,
@@ -71,4 +72,35 @@ export async function GET(
       { status: 500 }
     )
   }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id: messageId } = await params
+
+  const message = await db.message.findUnique({ where: { id: messageId } })
+  if (!message) {
+    return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+  }
+
+  // Delete thread participants, replies, associated task, then the message
+  await db.threadParticipant.deleteMany({ where: { threadId: messageId } })
+  await db.message.deleteMany({ where: { threadId: messageId } })
+  await db.task.deleteMany({ where: { messageId } })
+  await db.message.delete({ where: { id: messageId } })
+
+  const io = getIO()
+  io.to(`channel:${message.channelId}`).emit('message:deleted' as any, { id: messageId })
+  if (message.threadId) {
+    io.to(`thread:${message.threadId}`).emit('message:deleted' as any, { id: messageId })
+  }
+
+  return NextResponse.json({ success: true })
 }

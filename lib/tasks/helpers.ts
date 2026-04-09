@@ -76,6 +76,7 @@ export async function enrichTask(task: {
   messageId: string
   taskNumber: number
   title: string
+  body?: string | null
   status: string
   createdByType: string
   createdById: string
@@ -100,6 +101,7 @@ export async function enrichTask(task: {
     message_id: task.messageId,
     task_number: task.taskNumber,
     title: task.title,
+    body: task.body ?? null,
     status: task.status,
     created_by_type: task.createdByType,
     created_by_id: task.createdById,

@@ -113,14 +113,20 @@ export function MessageList({
       }
     }
 
+    const handleDeleted = (data: { id: string }) => {
+      setMessages((prev) => prev.filter((m) => m.id !== data.id))
+    }
+
     socket.on('message:new', handleNewMessage)
     socket.on('message:reply_count', handleReplyCount)
     socket.on('agent:routing', handleRouting)
+    socket.on('message:deleted', handleDeleted)
 
     return () => {
       socket.off('message:new', handleNewMessage)
       socket.off('message:reply_count', handleReplyCount)
       socket.off('agent:routing', handleRouting)
+      socket.off('message:deleted', handleDeleted)
     }
   }, [channelId, isConnected, socket])
 
@@ -207,6 +213,7 @@ export function MessageList({
                     ),
                   )
                 }}
+                onDelete={(msgId) => setMessages((prev) => prev.filter((m) => m.id !== msgId))}
                 isSystem={isSystem}
                 onOpenTaskByNumber={isSystem ? async (taskNumber: number) => {
                   try {

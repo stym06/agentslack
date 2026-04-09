@@ -37,6 +37,7 @@ export function initSocketServer(httpServer: HTTPServer) {
 
     socket.on('agent:join', (agentId: string) => {
       socket.join(`agent:${agentId}`)
+      console.log(`Socket ${socket.id} joined agent:${agentId}`)
     })
 
     socket.on('agent:leave', (agentId: string) => {

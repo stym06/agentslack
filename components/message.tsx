@@ -11,6 +11,7 @@ import { useAgentProfile } from '@/components/agents/AgentProfileContext'
 import { Hint } from './hint'
 import { ThreadBar } from './thread-bar'
 import { MessageToolbar } from './message-toolbar'
+import { DirtyRepoActions, extractRepoPath } from './messages/DirtyRepoActions'
 
 const Renderer = dynamic(() => import('./renderer'), {
   ssr: false,
@@ -46,6 +47,7 @@ interface MessageProps {
   isSystem?: boolean
   onOpenTaskByNumber?: (taskNumber: number) => void
   onTaskCreated?: (task: any) => void
+  onDelete?: (id: string) => void
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -79,6 +81,7 @@ export const Message = ({
   isSystem,
   onOpenTaskByNumber,
   onTaskCreated,
+  onDelete,
 }: MessageProps) => {
   const avatarFallback = authorName.charAt(0).toUpperCase()
   const dateObj = new Date(createdAt)
@@ -92,6 +95,16 @@ export const Message = ({
 
   const handleCreateTask = channelId ? async (projectId: string) => {
     try {
+      // Generate title + body from message via agent
+      const genRes = await fetch('/api/tasks/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: body }),
+      })
+      const { title: genTitle, body: genBody } = genRes.ok
+        ? await genRes.json()
+        : { title: body.replace(/@\w+/g, '').trim().slice(0, 100) || 'Untitled task', body: body }
+
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,7 +112,8 @@ export const Message = ({
           channel_id: channelId,
           project_id: projectId,
           message_id: id,
-          title: body.replace(/@\w+/g, '').trim().slice(0, 100) || 'Untitled task',
+          title: genTitle,
+          body: genBody,
         }),
       })
       if (res.ok) {
@@ -111,6 +125,17 @@ export const Message = ({
     }
   } : undefined
 
+  const dirtyRepoPath = extractRepoPath(body)
+
+  const handleDelete = onDelete ? async () => {
+    try {
+      const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' })
+      if (res.ok) onDelete(id)
+    } catch (err) {
+      console.error('Failed to delete message:', err)
+    }
+  } : undefined
+
   // System messages (task events) render as centered muted text
   if (isSystem) {
     // Parse #N references and make them clickable
@@ -118,7 +143,7 @@ export const Message = ({
     const hasTaskRef = parts.some((p) => /^#\d+$/.test(p))
 
     return (
-      <div className="flex items-center justify-center py-1">
+      <div className="flex flex-col items-center py-1">
         <span className="text-xs text-muted-foreground">
           {hasTaskRef && onOpenTaskByNumber
             ? parts.map((part, i) => {
@@ -139,6 +164,7 @@ export const Message = ({
               })
             : body}
         </span>
+        {dirtyRepoPath && <DirtyRepoActions repoPath={dirtyRepoPath} />}
       </div>
     )
   }
@@ -171,6 +197,7 @@ export const Message = ({
               </div>
             )}
             <Renderer value={body} />
+            {dirtyRepoPath && <DirtyRepoActions repoPath={dirtyRepoPath} />}
             <ThreadBar
               count={threadCount}
               image={threadImage}
@@ -184,10 +211,11 @@ export const Message = ({
         <MessageToolbar
           isPending={false}
           handleThread={() => onOpenThread?.(id)}
-          handleReaction={() => {}}
+
           hideThreadButton={hideThreadButton}
           onCreateTask={handleCreateTask}
           hasTask={!!task}
+          onDelete={handleDelete}
         />
       </div>
     )
@@ -230,6 +258,7 @@ export const Message = ({
           )}
 
           <Renderer value={body} />
+          {dirtyRepoPath && <DirtyRepoActions repoPath={dirtyRepoPath} />}
           <ThreadBar
             count={threadCount}
             image={threadImage}
@@ -247,6 +276,7 @@ export const Message = ({
         hideThreadButton={hideThreadButton}
         onCreateTask={handleCreateTask}
         hasTask={!!task}
+        onDelete={handleDelete}
       />
     </div>
   )

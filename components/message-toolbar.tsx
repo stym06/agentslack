@@ -1,30 +1,30 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { MessageSquareText, Smile, ListTodo, FolderGit2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { MessageSquareText, ListTodo, FolderGit2, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { EmojiPopover } from './emoji-popover'
 import { Hint } from './hint'
 import type { Project } from '@/types'
 
 interface MessageToolbarProps {
   isPending: boolean
   handleThread: () => void
-  handleReaction: (value: string) => void
   hideThreadButton?: boolean
   onCreateTask?: (projectId: string) => void
   hasTask?: boolean
+  onDelete?: () => void
 }
 
 export const MessageToolbar = ({
   isPending,
   handleThread,
-  handleReaction,
   hideThreadButton,
   onCreateTask,
   hasTask,
+  onDelete,
 }: MessageToolbarProps) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showProjectPicker, setShowProjectPicker] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -42,16 +42,10 @@ export const MessageToolbar = ({
 
   return (
     <div className="absolute right-5 top-0">
-      <div className="relative rounded-md border bg-card opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-        <EmojiPopover hint="Add reaction" onEmojiSelect={handleReaction}>
-          <Button variant="ghost" size="icon-sm" disabled={isPending}>
-            <Smile className="size-4" />
-          </Button>
-        </EmojiPopover>
-
+      <div className="relative flex items-center rounded-md border bg-card opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
         {!hideThreadButton && (
           <Hint label="Reply in thread">
-            <Button onClick={handleThread} variant="ghost" size="icon-sm" disabled={isPending}>
+            <Button onClick={handleThread} variant="ghost" size="icon-sm" disabled={isPending} className="text-muted-foreground hover:text-blue-400">
               <MessageSquareText className="size-4" />
             </Button>
           </Hint>
@@ -65,6 +59,7 @@ export const MessageToolbar = ({
                 variant="ghost"
                 size="icon-sm"
                 disabled={isPending}
+                className="text-muted-foreground hover:text-green-400"
               >
                 <ListTodo className="size-4" />
               </Button>
@@ -97,6 +92,45 @@ export const MessageToolbar = ({
                       </button>
                     ))
                   )}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {onDelete && (
+          <>
+            <Hint label="Delete message">
+              <Button
+                onClick={() => setShowDeleteConfirm(true)}
+                variant="ghost"
+                size="icon-sm"
+                disabled={isPending}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </Hint>
+
+            {showDeleteConfirm && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowDeleteConfirm(false)} />
+                <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-md border bg-popover p-3 shadow-lg">
+                  <p className="text-xs font-medium">Delete this message?</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">This cannot be undone.</p>
+                  <div className="mt-2.5 flex justify-end gap-1.5">
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowDeleteConfirm(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-7 text-xs"
+                      onClick={() => { setShowDeleteConfirm(false); onDelete() }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </>
             )}

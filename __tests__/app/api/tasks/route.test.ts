@@ -225,6 +225,7 @@ describe('POST /api/tasks', () => {
         messageId: 'msg-new',
         taskNumber: 1,
         title: 'Build feature',
+        body: null,
         status: 'todo',
         createdByType: 'user',
         createdById: 'user-1',

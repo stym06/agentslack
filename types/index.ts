@@ -72,6 +72,7 @@ export type Task = {
   project_id: string | null
   task_number: number
   title: string
+  body: string | null
   status: 'todo' | 'in_progress' | 'in_review' | 'done'
   created_by_type: 'user' | 'agent'
   created_by_id: string

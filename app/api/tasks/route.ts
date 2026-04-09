@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { channel_id, title, group_id, project_id, message_id } = body
+  const { channel_id, title, group_id, project_id, message_id, body: taskBody } = body
 
   if (!channel_id || !title) {
     return NextResponse.json({ error: 'channel_id and title required' }, { status: 400 })
@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
       messageId,
       taskNumber,
       title,
+      body: taskBody || null,
       status: 'todo',
       createdByType: 'user',
       createdById: session.user.id,

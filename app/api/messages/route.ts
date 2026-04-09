@@ -339,8 +339,18 @@ async function deliverToAgents(
             sender_name: sysActorName,
             sender_avatar: null,
           })
-        } catch (err) {
+        } catch (err: any) {
           console.error(`[Messages] Failed to auto-assign project task to ${agent.name}:`, err)
+          const sysMsg = await db.message.create({
+            data: {
+              channelId,
+              senderType: 'user',
+              senderId: userId,
+              content: err?.message || 'Failed to start task session',
+              metadata: { system: true, type: 'warning' },
+            },
+          })
+          io.to(`channel:${channelId}`).emit('message:new', { ...sysMsg, sender_name: 'System', sender_avatar: null })
         }
       }
       return // Don't fall through to normal delivery — session handles it
@@ -357,9 +367,76 @@ async function deliverToAgents(
   }
 
   for (const agent of agentsToDeliver) {
-    // Route to task session if this is a task thread with an active session
+    // Route to task session if this is a task thread
     if (taskForThread) {
-      const session = daemon.getSession(agent.id, taskForThread.id)
+      let session = daemon.getSession(agent.id, taskForThread.id)
+
+      // If no active session but task has a project, auto-restart the session
+      if (!session) {
+        const fullTask = await db.task.findUnique({ where: { id: taskForThread.id }, include: { project: true } })
+        if (fullTask?.projectId && fullTask.project && fullTask.project.status === 'active') {
+          try {
+            const agentInstructions = readAgentInstructions(agent.id)
+            const { worktreePath, branchName } = await setupTaskWorktree({
+              project: { id: fullTask.project.id, repoPath: fullTask.project.repoPath },
+              task: { id: fullTask.id, taskNumber: fullTask.taskNumber, title: fullTask.title },
+              agentId: agent.id,
+              agentInstructions: agentInstructions || undefined,
+            })
+
+            // Terminate any stale sessions for this task
+            await db.agentSession.updateMany({
+              where: { taskId: fullTask.id, status: 'active' },
+              data: { status: 'terminated', completedAt: new Date() },
+            })
+
+            const agentSession = await db.agentSession.create({
+              data: {
+                agentId: agent.id,
+                taskId: fullTask.id,
+                projectId: fullTask.project.id,
+                worktreePath,
+                branchName,
+                status: 'active',
+              },
+            })
+
+            const sessionConfig: SessionConfig = {
+              sessionId: agentSession.id,
+              agentId: agent.id,
+              taskId: fullTask.id,
+              taskNumber: fullTask.taskNumber,
+              taskTitle: fullTask.title,
+              projectId: fullTask.project.id,
+              worktreePath,
+              branchName,
+              channelId,
+              messageId: fullTask.messageId,
+            }
+
+            daemon.startSession(
+              { id: agent.id, openclawId: agent.openclawId, name: agent.name, model: agent.model, soulMd: agent.soulMd, isAdmin: agent.isAdmin, dirPath: worktreePath },
+              sessionConfig,
+            )
+
+            session = daemon.getSession(agent.id, fullTask.id)
+            console.log(`[Messages] Auto-restarted session for ${agent.name} on task #${fullTask.taskNumber}`)
+          } catch (err: any) {
+            console.error(`[Messages] Failed to auto-restart session for ${agent.name}:`, err)
+            const sysMsg = await db.message.create({
+              data: {
+                channelId,
+                senderType: 'user',
+                senderId: '00000000-0000-0000-0000-000000000000',
+                content: err?.message || 'Failed to restart task session',
+                metadata: { system: true, type: 'warning' },
+              },
+            })
+            io.to(`channel:${channelId}`).emit('message:new', { ...sysMsg, sender_name: 'System', sender_avatar: null })
+          }
+        }
+      }
+
       if (session) {
         io.to(`channel:${channelId}`).emit('agent:routing', {
           channelId,
@@ -388,9 +465,10 @@ async function deliverToAgents(
         }
         continue // Skip main process delivery
       }
+
     }
 
-    // Fallback: deliver to main process (existing behavior)
+    // Fallback: deliver to main process (no task/project context)
     if (!daemon.isReady(agent.id)) {
       console.warn(`Agent ${agent.name} is not ready yet, skipping`)
       continue

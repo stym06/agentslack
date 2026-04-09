@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Loader2, GitBranch } from 'lucide-react'
+import { UserPlus, Loader2, GitBranch, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import type { Agent, Project } from '@/types'
 
 interface AssignAgentDropdownProps {
@@ -19,10 +20,12 @@ export function AssignAgentDropdown({
   onAssigned,
 }: AssignAgentDropdownProps) {
   const [open, setOpen] = useState(false)
-  const [step, setStep] = useState<'agent' | 'project'>('agent')
+  const [step, setStep] = useState<'agent' | 'project' | 'dirty'>('agent')
   const [agents, setAgents] = useState<Agent[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [dirtyRepoPath, setDirtyRepoPath] = useState<string | null>(null)
   const [assigning, setAssigning] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -32,7 +35,7 @@ export function AssignAgentDropdown({
     setLoading(true)
     Promise.all([
       fetch('/api/agents').then((r) => r.json()),
-      fetch(`/api/projects?channel_id=${channelId}`).then((r) => r.json()),
+      fetch('/api/projects').then((r) => r.json()),
     ])
       .then(([agentsData, projectsData]) => {
         const agentList = Array.isArray(agentsData)
@@ -45,49 +48,69 @@ export function AssignAgentDropdown({
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [open, channelId])
+  }, [open])
 
   const handleSelectAgent = (agentId: string) => {
     setSelectedAgent(agentId)
     if (projects.length === 1) {
-      // Auto-select sole project
       handleAssign(agentId, projects[0].id)
     } else if (projects.length === 0) {
-      // No projects — can't assign with worktree
       setOpen(false)
     } else {
       setStep('project')
     }
   }
 
-  const handleAssign = async (agentId: string, projectId: string) => {
+  const handleAssign = async (agentId: string, projectId: string, dirtyStrategy?: string) => {
     setAssigning(true)
+    setSelectedProjectId(projectId)
     try {
       const res = await fetch(`/api/tasks/${taskId}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: agentId, project_id: projectId }),
+        body: JSON.stringify({
+          agent_id: agentId,
+          project_id: projectId,
+          ...(dirtyStrategy && { dirty_strategy: dirtyStrategy }),
+        }),
       })
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Failed' }))
-        throw new Error(err.error)
+        if (err.error === 'dirty_repo') {
+          setDirtyRepoPath(err.repo_path)
+          setStep('dirty')
+          setAssigning(false)
+          return
+        }
+        throw new Error(err.error || err.message)
       }
 
       onAssigned?.()
+      resetAndClose()
     } catch (err) {
       console.error('Failed to assign:', err)
       alert(err instanceof Error ? err.message : 'Failed to assign task')
-    } finally {
       setAssigning(false)
-      setOpen(false)
-      setStep('agent')
-      setSelectedAgent(null)
     }
   }
 
+  const handleDirtyChoice = (strategy: 'stash' | 'force') => {
+    if (!selectedAgent || !selectedProjectId) return
+    handleAssign(selectedAgent, selectedProjectId, strategy)
+  }
+
+  const resetAndClose = () => {
+    setOpen(false)
+    setStep('agent')
+    setSelectedAgent(null)
+    setSelectedProjectId(null)
+    setDirtyRepoPath(null)
+    setAssigning(false)
+  }
+
   if (currentAgentId) {
-    return null // Already assigned, don't show
+    return null
   }
 
   return (
@@ -105,8 +128,8 @@ export function AssignAgentDropdown({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setStep('agent') }} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-md border bg-popover shadow-lg">
+          <div className="fixed inset-0 z-40" onClick={resetAndClose} />
+          <div className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-md border bg-popover shadow-lg">
             {loading ? (
               <div className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -117,6 +140,48 @@ export function AssignAgentDropdown({
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Assigning...
               </div>
+            ) : step === 'dirty' ? (
+              <div className="flex flex-col gap-3 p-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-yellow-500" />
+                  <div>
+                    <p className="text-sm font-medium">Uncommitted changes</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      The project repo has uncommitted changes:
+                    </p>
+                    <code className="mt-1 block truncate rounded bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+                      {dirtyRepoPath}
+                    </code>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Button
+                    size="sm"
+                    onClick={() => handleDirtyChoice('stash')}
+                    className="w-full justify-start text-xs"
+                  >
+                    <GitBranch className="mr-1.5 size-3" />
+                    Stash changes & continue
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDirtyChoice('force')}
+                    className="w-full justify-start text-xs"
+                  >
+                    <GitBranch className="mr-1.5 size-3" />
+                    Keep changes on current branch
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={resetAndClose}
+                    className="w-full justify-start text-xs text-muted-foreground"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             ) : step === 'agent' ? (
               <>
                 <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b">
@@ -124,7 +189,7 @@ export function AssignAgentDropdown({
                 </div>
                 {agents.length === 0 ? (
                   <div className="px-3 py-3 text-xs text-muted-foreground">
-                    No agents in this channel
+                    No agents available
                   </div>
                 ) : (
                   agents.map((agent) => (

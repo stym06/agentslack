@@ -142,6 +142,7 @@ model Task {
   messageId     String   @unique @map("message_id") @db.Uuid
   taskNumber    Int      @map("task_number")
   title         String
+  body          String?
   status        String   @default("todo")
   createdByType String   @map("created_by_type")
   createdById   String   @map("created_by_id") @db.Uuid
